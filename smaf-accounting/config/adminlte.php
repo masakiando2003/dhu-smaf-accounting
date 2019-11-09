@@ -14,7 +14,7 @@ return [
     |
     */
 
-    'title' => 'AdminLTE 3',
+    'title' => '株式会社SmaF',
     'title_prefix' => '',
     'title_postfix' => '',
 
@@ -30,12 +30,12 @@ return [
     |
     */
 
-    'logo' => '<b>Admin</b>LTE',
+    'logo' => '<b>SmaF会計システム</b>',
     'logo_img' => 'vendor/adminlte/dist/img/AdminLTELogo.png',
     'logo_img_class' => 'brand-image-xl',
     'logo_img_xl' => null,
     'logo_img_xl_class' => 'brand-image-xs',
-    'logo_img_alt' => 'AdminLTE',
+    'logo_img_alt' => '株式会社SmaF',
 
     /*
     |--------------------------------------------------------------------------
@@ -174,10 +174,31 @@ return [
 
     'menu' => [
         [
+            'text'        => 'アイテム',
+            'url'         => 'admin/items',
+            'icon'        => 'fas fa-utensils',
+        ],
+        [
+            'text'        => '注文',
+            'url'         => 'admin/orders',
+            'icon'        => 'fas fa-list',
+        ],
+        [
+            'text'        => '現金出納帳',
+            'url'         => 'admin/cashier',
+            'icon'        => 'fas fa-cash-register',
+        ],
+        [
+            'text'        => 'レポート',
+            'url'         => 'admin/report',
+            'icon'        => 'fas fa-book-open',
+        ],
+        [
             'text' => 'search',
             'search' => true,
             'topnav' => true,
         ],
+        /*
         [
             'text' => 'blog',
             'url'  => 'admin/blog',
@@ -252,6 +273,7 @@ return [
             'text'       => 'information',
             'icon_color' => 'aqua',
         ],
+        */
     ],
 
     /*
