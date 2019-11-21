@@ -193,12 +193,12 @@ return [
             'url'         => 'admin/report',
             'icon'        => 'fas fa-book-open',
         ],
+        /*
         [
             'text' => 'search',
             'search' => true,
             'topnav' => true,
         ],
-        /*
         [
             'text' => 'blog',
             'url'  => 'admin/blog',

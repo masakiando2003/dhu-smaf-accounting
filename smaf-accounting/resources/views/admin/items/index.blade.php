@@ -1,4 +1,4 @@
-{{-- resources/views/admin/order/index.blade.php --}}
+{{-- resources/views/admin/items/index.blade.php --}}
 
 @extends('adminlte::page')
 
@@ -10,13 +10,28 @@
 
 @section('content')
 
+    @if($errors->any())
+        <div class="alert alert-danger">
+            @foreach($errors->all() as $error_msg)
+                {{ $error_msg }}<br/>
+            @endforeach
+        </div>
+    @endif
+    @if(session('success_msg'))
+        <div class="alert alert-success">
+            {{ session('success_msg') }}
+        </div>
+    @endif
+
 <div class="float-right py-3">
   <a href="/admin/items/create" class="btn btn-primary">
     <span class="glyphicon glyphicon-plus">新規作成</span>
   </a>
 </div>
 
-<table class="table">
+<form action="/admin/items/delete" method="POST">
+{{ csrf_field() }}
+<table class="table table-bordered table-hover dataTable">
   <thead class="thead-light">
     <tr>
       <th scope="col">ID</th>
@@ -26,62 +41,45 @@
       <th scope="col">重量</th>
       <th scope="col">重量単位</th>
       <th scope="col">作成日付</th>
+      <th scope="col">最終更新日付</th>
       <th scope="col">アクション</th>
     </tr>
   </thead>
   <tbody>
+    @foreach($items as $item)
     <tr>
-      <th scope="row">1</th>
-      <td>ポップコーン(小)</td>
-      <td>140</td>
-      <td>S</td>
-      <td>75</td>
-      <td>g</td>
-      <td>2019/11/09</td>
+      <th scope="row">{{ $item->id }}</th>
+      <td>{{ $item->name }}</td>
+      <td>{{ $item->price }}</td>
+      <td>{{ $item->size }}</td>
+      <td>{{ $item->weight }}</td>
+      <td>{{ $item->weight_unit }}</td>
+      <td>{{ $item->created_at->format('Y/m/d') }}</td>
+      <td>{{ $item->updated_at->format('Y/m/d') }}</td>
       <td>
-        <input type="button" class="btn btn-success" name="btnEdit" value="編集" />
-        <input type="button" class="btn btn-danger" name="btnEdit" value="削除" onclick="ConfirmDelete('ポップコーン(小)')" />
+        <a href="/admin/items/detail/{{ $item->id }}" class="btn btn-success">編集</a>
+        <input type="submit" class="btn btn-danger" name="btnDel" id="btnDel" value="削除" onclick="return ConfirmDelete('{{ $item->id }}', '{{ $item->name }}')" />
       </td>
     </tr>
-    <tr>
-      <th scope="row">2</th>
-      <td>ポップコーン(大)</td>
-      <td>200</td>
-      <td>S</td>
-      <td>75</td>
-      <td>g</td>
-      <td>2019/11/09</td>
-      <td>
-        <input type="button" class="btn btn-success" name="btnEdit" value="編集" />
-        <input type="button" class="btn btn-danger" name="btnEdit" value="削除" onclick="ConfirmDelete('ポップコーン(大)')" />
-      </td>
-    </tr>
-    <tr>
-      <th scope="row">3</th>
-      <td>ポテト(小)</td>
-      <td>100</td>
-      <td>L</td>
-      <td>150</td>
-      <td>g</td>
-      <td>2019/11/09</td>
-      <td>
-        <input type="button" class="btn btn-success" name="btnEdit" value="編集" />
-        <input type="button" class="btn btn-danger" name="btnEdit" value="削除" onclick="ConfirmDelete('ポテト(小)')" />
-      </td>
-    </tr>
+    @endforeach
   </tbody>
 </table>
-@stop
-
-@section('css')
-    <link rel="stylesheet" href="/css/admin_custom.css">
+<input type="hidden" name="del_id" id="del_id" />
+<input type="hidden" name="del_name" id="del_name" />
+<input type="hidden" name="_method" id="_method">
+<input type="hidden" name="display_items" id="display_items" value="{{ $display_items ?? '' }}" />
+<input type="hidden" name="page" id="page" value="{{ $page ?? ''}}" />
+</form>
 @stop
 
 @section('js')
     <script type="text/javascript">
-        function ConfirmDelete(item_name){
+        function ConfirmDelete(id, item_name){
             var flag = false;
             if(confirm('アイテム"'+item_name+'"を削除しても宜しいでしょうか?') == true){
+                document.getElementById('del_id').value = id;
+                document.getElementById('del_name').value = item_name;
+                document.getElementById('_method').value = "delete";
                 return true;
             }
             return flag;

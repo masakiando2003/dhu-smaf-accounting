@@ -1,4 +1,4 @@
-{{-- resources/views/admin/order/index.blade.php --}}
+{{-- resources/views/admin/cashier/index.blade.php --}}
 
 @extends('adminlte::page')
 
@@ -10,8 +10,21 @@
 
 @section('content')
 
+  @if($errors->any())
+        <div class="alert alert-danger">
+            @foreach($errors->all() as $error_msg)
+                {{ $error_msg }}<br/>
+            @endforeach
+        </div>
+    @endif
+    @if(session('success_msg'))
+        <div class="alert alert-success">
+            {{ session('success_msg') }}
+        </div>
+    @endif
+
 <div class="float-right py-3">
-  <a href="#" class="btn btn-primary">
+  <a href="/admin/cashier/create" class="btn btn-primary">
     <span class="glyphicon glyphicon-plus">新規作成</span>
   </a>
 </div>
@@ -20,66 +33,41 @@
   <thead class="thead-light">
     <tr>
       <th scope="col">ID</th>
-      <th scope="col">日付</th>
+      <th scope="col">時間</th>
+      <th scope="col">種類</th>
       <th scope="col">摘要</th>
       <th scope="col">収入金額</th>
       <th scope="col">支払金額</th>
       <th scope="col">差引金額</th>
+      <th scope="col">アクション</th>
     </tr>
   </thead>
   <tbody>
-    <tr>
-      <th scope="row">1</th>
-      <td>ポップコーン(小)</td>
-      <td>140</td>
-      <td>S</td>
-      <td>75</td>
-      <td>g</td>
-      <td>2019/11/09</td>
-      <td>
-        <input type="button" class="btn btn-success" name="btnEdit" value="編集" />
-        <input type="button" class="btn btn-danger" name="btnEdit" value="削除" onclick="ConfirmDelete('ポップコーン(小)')" />
-      </td>
-    </tr>
-    <tr>
-      <th scope="row">2</th>
-      <td>ポップコーン(大)</td>
-      <td>200</td>
-      <td>S</td>
-      <td>75</td>
-      <td>g</td>
-      <td>2019/11/09</td>
-      <td>
-        <input type="button" class="btn btn-success" name="btnEdit" value="編集" />
-        <input type="button" class="btn btn-danger" name="btnEdit" value="削除" onclick="ConfirmDelete('ポップコーン(大)')" />
-      </td>
-    </tr>
-    <tr>
-      <th scope="row">3</th>
-      <td>ポテト(小)</td>
-      <td>100</td>
-      <td>L</td>
-      <td>150</td>
-      <td>g</td>
-      <td>2019/11/09</td>
-      <td>
-        <input type="button" class="btn btn-success" name="btnEdit" value="編集" />
-        <input type="button" class="btn btn-danger" name="btnEdit" value="削除" onclick="ConfirmDelete('ポテト(小)')" />
-      </td>
-    </tr>
+    @foreach($cashier as $cashier_item)
+      <tr>
+        <th scope="row">{{ $cashier_item->id }}</th>
+        <td>{{ $cashier_item->transaction_time }}</td>
+        <td>{{ ($cashier_item->type == 'income') ? '収入' : '支払' }}</td>
+        <td>{{ $cashier_item->description }}</td>
+        <td>{{ $cashier_item->income_amount }}</td>
+        <td>{{ $cashier_item->payment_amount }}</td>
+        <td>{{ $cashier_item->deduction_amount }}</td>
+        <td>
+          <a href="/admin/cashier/detail/{{ $cashier_item->id }}" class="btn btn-success">編集</a>
+          <input type="button" class="btn btn-danger" name="btnDel" id="btnDel" value="削除" 
+                 onclick="ConfirmDelete('{{ $cashier_item->id }}')" />
+        </td>
+      </tr>
+    @endforeach
   </tbody>
 </table>
 @stop
 
-@section('css')
-    <link rel="stylesheet" href="/css/admin_custom.css">
-@stop
-
 @section('js')
     <script type="text/javascript">
-        function ConfirmDelete(item_name){
+        function ConfirmDelete(cashier_id){
             var flag = false;
-            if(confirm('アイテム"'+item_name+'"を削除しても宜しいでしょうか?') == true){
+            if(confirm('出納記録#"'+cashier_id+'"を削除しても宜しいでしょうか?') == true){
                 return true;
             }
             return flag;

@@ -5,11 +5,11 @@ namespace App\Model;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Order extends Model
+class OrderItem extends Model
 {
     use SoftDeletes;
 
-    protected $table        = 'orders';
+    protected $table        = 'order_items';
     public    $tableType    = 'master';
 
     protected $primaryKey   = 'id';
@@ -17,7 +17,7 @@ class Order extends Model
     public    $incrementing = true;
 
     protected $dates = ['created_at', 'updated_at'];
-    protected $fillable = ['num_of_people', 'paid', 'change', 'remarks'];
+    protected $fillable = ['order_id', 'item_id', 'quantity'];
 
     // created_at, updated_at は DB の機能で自動更新する.
     public $timestamps = false;
