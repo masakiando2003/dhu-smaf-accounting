@@ -19,9 +19,9 @@ class ItemAutoCompleteController extends Controller
 
     public function getItemPrice(Request $request)
     {
-          $item_id = $request->get('id');
+          $item_name = $request->get('itemName');
       
-          $result = Item::where('id', $item_id)->get();
+          $result = Item::where('name', $item_name)->get();
  
           return response()->json($result);
             
