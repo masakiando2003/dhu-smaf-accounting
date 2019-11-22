@@ -47,7 +47,7 @@
       <tr>
         <th scope="row">{{ $cashier_item->id }}</th>
         <td>{{ $cashier_item->transaction_time }}</td>
-        <td>{{ ($cashier_item->type == 'income') ? '収入' : '支払' }}</td>
+        <td>{{ ($cashier_item->cashier_type == 'income') ? '収入' : '支払' }}</td>
         <td>{{ $cashier_item->description }}</td>
         <td>{{ $cashier_item->income_amount }}</td>
         <td>{{ $cashier_item->payment_amount }}</td>
