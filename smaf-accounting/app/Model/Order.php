@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 use App\Model\OrderItem;
 
-Use DB;
-
 class Order extends Model
 {
     use SoftDeletes;
