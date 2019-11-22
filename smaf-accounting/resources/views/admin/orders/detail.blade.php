@@ -67,7 +67,7 @@
                 </tr>
             </thead>
             <tbody id="order-item-list">
-                @if(isset($orderDetail->id) && isset($orderItemDetail))
+                @if(isset($orderDetail->id) && isset($orderItemDetail) && count($orderItemDetail) > 0)
                     @foreach($orderItemDetail as $orderItem)
                         @php
                             $count = 1;
@@ -79,7 +79,7 @@
                             </td>
                             <td><input type="text" class="form-control" name="price_{{ $count }}" id="price_{{ $count }}" value="{{ $orderItem->price ?? '' }}" onchange="OrderItemValidation(this.id);CalculateOrderTotal()" placeholder="数字" /></td>
                             <td><input type="text" class="form-control" name="quantity_{{ $count }}" id="quantity_{{ $count }}" value="{{ $orderItem->quantity ?? '' }}" onchange="OrderItemValidation(this.id);CalculateOrderTotal()" placeholder="数字" /></td>
-                            <td><input type="checkbox" class="form-control" name="delete_{{ $count }}" id="delete_{{ $count }}" /></td>
+                            <td><input type="checkbox" class="form-control" name="delete_item_{{ $count }}" id="delete_item_{{ $count }}" /></td>
                             <td><button class="btn btn-primary" name="btnClear" id="btnClear" onclick="ClearFilledItem('{{ $count }}')">クリア</button></td>
                         </tr>
                         <input type="hidden" name="order_item_count" id="order_item_count" value="{{ count($orderItemDetail) }}" />
@@ -95,7 +95,7 @@
                         </td>
                         <td><input type="text" class="form-control" name="price_1" id="price_1" onchange="OrderItemValidation(this.id);CalculateOrderTotal()" placeholder="数字" /></td>
                         <td><input type="text" class="form-control" name="quantity_1" id="quantity_1" onchange="OrderItemValidation(this.id);CalculateOrderTotal()" placeholder="数字" /></td>
-                        <td><input type="checkbox" class="form-control" name="delete_1" id="delete_1" /></td>
+                        <td><input type="checkbox" class="form-control" name="delete_item_1" id="delete_item_1" /></td>
                         <td><button class="btn btn-primary" name="btnClear" id="btnClear" onclick="ClearFilledItem('1')">クリア</button></td>
                     </tr>
                     <input type="hidden" name="order_item_count" id="order_item_count" value="1" />
@@ -140,7 +140,7 @@
                 <div class="col-sm-2">備考</div>
                 <div class="col-sm-6">
                     <textarea class="form-control" style="resize: none;"
-                              name="remarks" id="remarks" cols=80 rows=10>@if(isset($itemDeailDetail->remarks)){{ $itemDeailDetail->remarks ?? '' }}@else{{ old('remarks') ?? '' }}@endif</textarea>
+                              name="remarks" id="remarks" cols=80 rows=10>@if(isset($orderDetail->remarks)){{ $orderDetail->remarks ?? '' }}@else{{ old('remarks') ?? '' }}@endif</textarea>
                 </div>
             </div>
 
@@ -250,18 +250,20 @@
     }
 
     function CalculateChange(){
-        var order_total = document.getElementById('order_total_hidden').value;
-        var paid = document.getElementById('paid').value;
-        if(paid.match(/^[0-9]+$/)){
+        var order_total = parseInt(document.getElementById('order_total_hidden').value);
+        var paid = parseInt(document.getElementById('paid').value);
+        if(!isNaN(paid)){
             if(paid >= order_total){
                 document.getElementById('change').value = paid - order_total;
             } else {
                 alert('支払金額に合計金額より大きな数字を入力してください。');
                 document.getElementById('paid').value = '';
+                document.getElementById('change').value = 0;
             }
         } else {
             alert('支払金額に数字を入力してください。');
             document.getElementById('paid').value = '';
+            document.getElementById('change').value = 0;
         }
     }
 
@@ -280,13 +282,14 @@
         return flag;
     }
 
-    function ConfirmDelete(id){
+    function ConfirmDelete(id)
+    {
         var flag = false;
         if(confirm('本当にこの注文を削除しますか?') == true){
             flag = true;
             document.getElementById('del_id').value = id;
             document.getElementById('_method').value = "delete";
-            document.getElementById('orders').action = '/admin/orders/delete/'+id;
+            document.getElementById('orders').action = '/admin/orders/delete/';
         }
         return flag;
     }
@@ -302,6 +305,8 @@
         }
         document.getElementById('order_total').innerHTML = order_total;
         document.getElementById('order_total_hidden').value = order_total;
+
+        CalculateChange();
     }
 
     function AddRow(){
@@ -314,14 +319,14 @@
         var item_input = row.insertCell(0);
         var price_input = row.insertCell(1);
         var quantity_input = row.insertCell(2);
-        var delete_checkbox = row.insertCell(3);
+        var delete_item_checkbox = row.insertCell(3);
         var clear_button= row.insertCell(4);
 
         item_input.innerHTML = "<input type='hidden' name='item_id_"+order_item_count+"' id='item_id_"+order_item_count+"' />";
         item_input.innerHTML += "<input type='text' class='form-control' name='item_name_"+order_item_count+"' id='item_name_"+order_item_count+"' onchange='AutoFillQuantity('"+order_item_count+"');GetItemIdAndPrice('"+order_item_count+"');' placeholder='少なくとも一つ文字を入力してください' />";
         price_input.innerHTML = "<input type='text' class='form-control' name='price_"+order_item_count+"' id='price_"+order_item_count+"' onchange='CalculateOrderTotal()' placeholder='数字' />";
         quantity_input.innerHTML = "<input type='text' class='form-control' name='quantity_"+order_item_count+"' id='quantity_"+order_item_count+"' onchange='CalculateOrderTotal()' placeholder='数字' />";
-        delete_checkbox.innerHTML = "<input type='checkbox' class='form-control' name='delete_"+order_item_count+"' id='delete_"+order_item_count+"' />";
+        delete_item_checkbox.innerHTML = "<input type='checkbox' class='form-control' name='delete_item_"+order_item_count+"' id='delete_item_"+order_item_count+"' />";
         clear_button.innerHTML = "<button class='btn btn-primary' name='btnClear' id='btnClear' onclick=\"ClearFilledItem('"+order_item_count+"')\"";
         document.getElementById('order_item_count').value = order_item_count;
     }

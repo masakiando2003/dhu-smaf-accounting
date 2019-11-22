@@ -31,11 +31,11 @@ return [
     */
 
     'logo' => '<b>SmaF会計システム</b>',
-    'logo_img' => 'vendor/adminlte/dist/img/AdminLTELogo.png',
+    'logo_img' => '',
     'logo_img_class' => 'brand-image-xl',
     'logo_img_xl' => null,
     'logo_img_xl_class' => 'brand-image-xs',
-    'logo_img_alt' => '株式会社SmaF',
+    'logo_img_alt' => '',
 
     /*
     |--------------------------------------------------------------------------

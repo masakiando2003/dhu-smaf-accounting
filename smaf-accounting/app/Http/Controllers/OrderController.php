@@ -11,6 +11,8 @@ use App\Model\Order;
 use App\Model\OrderItem;
 use App\Model\Cashier;
 
+use Carbon\Carbon;
+
 class OrderController extends Controller
 {
     function index(Request $request)
@@ -66,7 +68,7 @@ class OrderController extends Controller
             $order_total += ($orderItem->price * $orderItem->quantity);
         }
         $orderDetail->order_total = $order_total;
-        $orderDetail->change = $order_total - $orderDetail->paid;
+        $orderDetail->change = $orderDetail->paid - $order_total;
         return view('admin/orders/detail', compact('page', 'orderDetail', 'orderItemDetail'));
     }
 
@@ -107,18 +109,23 @@ class OrderController extends Controller
         $order_item_count = $request->order_item_count;
         $order_item_total = 0;
         for($i = 1; $i <= $order_item_count; $i++){
-            $new_order_item = new OrderItem();
-            if(isset($_POST['item_id_'.$i]) && $_POST['item_id_'.$i]!=''){
+            if(isset($_POST['item_id_'.$i]) && $_POST['item_id_'.$i]!='' &&
+                $_POST['delete_item_'.$i] == ''){
+                $new_order_item = new OrderItem();
                 $new_order_item->order_id = $order_id;
                 $new_order_item->item_id = $_POST['item_id_'.$i];
                 $order_item_price = ($_POST['price_'.$i] !='') ? $_POST['price_'.$i] : 0;
-                $new_order_item->price = $order_item_price;
                 $order_item_quantity = ($_POST['quantity_'.$i] !='') ? $_POST['quantity_'.$i] : 0;
-                $new_order_item->quantity = $order_item_quantity;
-                $order_item_total += ($order_item_price * $order_item_quantity);
+                $order_item_total += $order_item_price * $order_item_quantity;
                 $new_order_item->save();
             }
         }
+
+        $change = $request->paid - $order_item_total;
+        Order::where('id', $order_id)
+             ->update([
+                'change' => $change
+        ]);
 
         if($request->paid > 0){
             // 直接出納記録を作成する
@@ -140,10 +147,12 @@ class OrderController extends Controller
 
     function EditOrder(Request $request)
     {
-        if($request->id === null){
+        if($request->order_id == null){
             return redirect('/admin/orders');
             exit;
         }
+
+        $order_id = $request->order_id;
 
         $validator = $this->GetOrderValidator($request);
         if ($validator->fails()) {
@@ -154,21 +163,66 @@ class OrderController extends Controller
         }
 
         // 更新.
-        Order::where('id', $request->id)
+        Order::where('id', $order_id)
              ->update([
-                'name' => $request->name,
-                'description' => $request->description,
-                'price' => $request->price,
-                'size' => $request->size,
-                'weight' => $request->weight,
-                'weight_unit' => $request->weight_unit,
-                'init_stock' => $request->init_stock,
-                'stock' => $request->stock,
+                'num_of_people' => $request->num_of_people,
+                'paid'          => $request->paid,
+                'change'        => $request->change,
+                'remarks'       => $request->remarks,
+                'updated_at'    => Carbon::now()
              ]);
 
+        $order_item_count = $request->order_item_count;
+        $order_item_total = 0;
+        for($i = 1; $i <= $order_item_count; $i++){
+            if(isset($_POST['item_id_'.$i]) && $_POST['item_id_'.$i]!=''){
+                if(isset($_POST['delete_item_'.$i]) && $_POST['delete_item_'.$i]!=''){
+                    $item_id = intval($_POST['item_id_'.$i]);
+                    OrderItem::where('order_id', $order_id)->where('item_id', $item_id)
+                              ->delete();
+                } else {
+                    $item_id = intval($_POST['item_id_'.$i]);
+                    $order_item_price = ($_POST['price_'.$i] !='') ? intval($_POST['price_'.$i]) : 0;
+                    $order_item_quantity = ($_POST['quantity_'.$i] !='') ? intval($_POST['quantity_'.$i]) : 0;
+                    $order_item_total += $order_item_price * $order_item_quantity;
+                    $order_item_exist_count = OrderItem::where('order_id', $order_id)->where('item_id', $item_id)->count();
+                    if($order_item_exist_count > 0){
+                        OrderItem::where('order_id', $order_id)->where('item_id', $item_id)
+                                 ->update([
+                                    'item_id'       => $item_id,
+                                    'price'         => $order_item_price,
+                                    'quantity'      => $order_item_quantity,
+                                    'updated_at'    => Carbon::now()
+                        ]);
+                    } else {
+                        $new_order_item = new OrderItem();
+                        $new_order_item->order_id = $order_id;
+                        $new_order_item->item_id = $item_id;
+                        $new_order_item->price = $order_item_price;
+                        $new_order_item->quantity = $order_item_quantity;
+                        $new_order_item->save();
+                    }
+                }
+            }
+        }
+
+        $change = $request->paid - $order_item_total;
+        Order::where('id', $order_id)
+             ->update([
+                'change' => $change
+        ]);
+
+        Cashier::where('order_id', $order_id)
+                ->update([
+                'income_amount'     => $request->paid,
+                'payment_amount'    => $request->change,
+                'deduction_amount'  => $request->paid - $request->change,
+                'remarks'           => $request->remarks,
+                'updated_at'        => Carbon::now(),
+            ]);
         
-        $msg = "注文ID: \"$request->id\"を更新しました";
-        return redirect('/admin/items')->with('success_msg', $msg);
+        $msg = "注文ID: \"$order_id\"を更新しました";
+        return redirect('/admin/orders')->with('success_msg', $msg);
     }
 
     function DeleteOrder(Request $request)
@@ -183,7 +237,7 @@ class OrderController extends Controller
             OrderItem::where('order_id', $order_id)->delete();
 
             Cashier::where('order_id', $order_id)->delete();
-            
+
             $order->save();
             
             DB::commit();

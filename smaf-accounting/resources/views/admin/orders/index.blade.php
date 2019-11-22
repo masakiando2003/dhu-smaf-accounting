@@ -48,7 +48,7 @@
     <tr>
       <th scope="row">{{ $order->id }}</th>
       <td>{{ $order->num_of_people }}</td>
-      <td>200</td>
+      <td>{{ $order->GetOrderTotal($order->id) }}</td>
       <td>{{ $order->paid }}</td>
       <td>{{ $order->change }}</td>
       <td>{{ $order->created_at->format('Y/m/d H:i:s') }}</td>

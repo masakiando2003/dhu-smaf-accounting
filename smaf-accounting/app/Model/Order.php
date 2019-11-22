@@ -5,6 +5,10 @@ namespace App\Model;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+use App\Model\OrderItem;
+
+Use DB;
+
 class Order extends Model
 {
     use SoftDeletes;
@@ -21,4 +25,14 @@ class Order extends Model
 
     // created_at, updated_at は DB の機能で自動更新する.
     public $timestamps = false;
+
+    public function GetOrderTotal(int $order_id){
+        $order_total = 0;
+        $orderItems = OrderItem::where('order_id', $order_id)->get();
+        foreach($orderItems as $orderItem){
+            $order_total += ($orderItem->price * $orderItem->quantity);
+        }
+
+        return $order_total;
+    }
 }
