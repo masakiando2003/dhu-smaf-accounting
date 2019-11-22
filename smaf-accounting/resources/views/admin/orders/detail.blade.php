@@ -75,7 +75,7 @@
                         <tr id="order_item_row_{{ $count }}">
                             <td>
                                 <input type="hidden" name="item_id_{{ $count }}" id="item_id_{{ $count }}" value="{{ $orderItem->item_id }}" />
-                                <input type="text" class="form-control item_search" name="item_name_{{ $count }}" id="item_name_{{ $count }}" value="{{ $orderItem->GetItemName($orderItem->item_id) ?? '' }}" placeholder='少なくとも一つ文字を入力してください' onchange="AutoFillPriceAndQuantity('{{ $count }}');CalculateOrderTotal();" />
+                                <input type="text" class="form-control item_search" name="item_name_{{ $count }}" id="item_name_{{ $count }}" value="{{ $orderItem->GetItemName($orderItem->item_id) ?? '' }}" placeholder='少なくとも一つ文字を入力してください' onchange="AutoFillQuantity('{{ $count }}');GetItemPrice('{{ $count }}');CalculateOrderTotal();" />
                             </td>
                             <td><input type="text" class="form-control" name="price_{{ $count }}" id="price_{{ $count }}" value="{{ $orderItem->price ?? '' }}" onchange="OrderItemValidation(this.id);CalculateOrderTotal()" placeholder="数字" /></td>
                             <td><input type="text" class="form-control" name="quantity_{{ $count }}" id="quantity_{{ $count }}" value="{{ $orderItem->quantity ?? '' }}" onchange="OrderItemValidation(this.id);CalculateOrderTotal()" placeholder="数字" /></td>
@@ -93,7 +93,7 @@
                     <tr id="order_item_row_1">
                         <td>
                             <input type="hidden" name="item_id_1" id="item_id_1" />
-                            <input type="text" class="form-control item_search" name="item_name_1" id="item_name_1" placeholder='少なくとも一つ文字を入力してください' onchange="AutoFillPriceAndQuantity('1');CalculateOrderTotal();" />
+                            <input type="text" class="form-control item_search" name="item_name_1" id="item_name_1" placeholder='少なくとも一つ文字を入力してください' onchange="AutoFillQuantity('1');GetItemPrice('1');CalculateOrderTotal();" />
                         </td>
                         <td><input type="text" class="form-control" name="price_1" id="price_1" onchange="OrderItemValidation(this.id);CalculateOrderTotal()" placeholder="数字" /></td>
                         <td><input type="text" class="form-control" name="quantity_1" id="quantity_1" onchange="OrderItemValidation(this.id);CalculateOrderTotal()" placeholder="数字" /></td>
@@ -205,10 +205,7 @@
                 dataType: "json",
                 success: function(data){
                     var resp = $.map(data,function(obj){
-                        console.log('DATA: '+JSON.stringify(data));
-                        console.log('OBJ: '+JSON.stringify(obj));
                         document.getElementById('auto_item_id').value = obj.id;
-                        document.getElementById('auto_price').value = obj.price;
                         return obj.name;
                     }); 
                     response(resp);
@@ -218,15 +215,31 @@
         minLength: 0
     });
 
+    function GetItemPrice(index){
+        const item_id = document.getElementById('item_id_'+index).value;
+        $.ajax({
+            url: "{{url('item_getprice')}}",
+            data: {
+                    id : item_id
+            },
+            dataType: "json",
+            success: function(data){
+                var resp = $.map(data,function(obj){
+                    document.getElementById('price_'+index).value = obj.price;
+                }); 
+                response(resp);
+            },
+        });
+    }
+
     function ClearFilledItem(index){
         document.getElementById('item_id_'+index).value = '';
         document.getElementById('price_'+index).value = '';
         document.getElementById('quantity_'+index).value = '';
     }
 
-    function AutoFillPriceAndQuantity(index){
+    function AutoFillQuantity(index){
         document.getElementById('item_id_'+index).value = document.getElementById('auto_item_id').value;
-        document.getElementById('price_'+index).value = document.getElementById('auto_price').value;
         document.getElementById('quantity_'+index).value = 1;
     }
 
@@ -310,7 +323,7 @@
         var clear_button= row.insertCell(4);
 
         item_input.innerHTML = "<input type='hidden' name='item_id_"+order_item_count+"' id='item_id_"+order_item_count+"' />";
-        item_input.innerHTML += "<input type='text' class='form-control' name='item_name_"+order_item_count+"' id='item_name_"+order_item_count+"' onchange='CalculateOrderTotal()' placeholder='少なくとも一つ文字を入力してください' />";
+        item_input.innerHTML += "<input type='text' class='form-control' name='item_name_"+order_item_count+"' id='item_name_"+order_item_count+"' onchange='AutoFillQuantity('"+order_item_count+"');GetItemPrice('"+order_item_count+"');CalculateOrderTotal()' placeholder='少なくとも一つ文字を入力してください' />";
         price_input.innerHTML = "<input type='text' class='form-control' name='price_"+order_item_count+"' id='price_"+order_item_count+"' onchange='CalculateOrderTotal()' placeholder='数字' />";
         quantity_input.innerHTML = "<input type='text' class='form-control' name='quantity_"+order_item_count+"' id='quantity_"+order_item_count+"' onchange='CalculateOrderTotal()' placeholder='数字' />";
         delete_checkbox.innerHTML = "<input type='checkbox' class='form-control' name='delete_"+order_item_count+"' id='delete_"+order_item_count+"' />";

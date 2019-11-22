@@ -27,8 +27,10 @@ Route::post('/admin/items/register', 'ItemController@RegisterItem');
 Route::post('/admin/items/edit', 'ItemController@EditItem');
 // アイテム削除
 Route::delete('/admin/items/delete/', 'ItemController@DeleteItem');
-// アイテム自動入力
+// アイテム名称自動入力
 Route::get('item_autocomplete', 'ItemAutoCompleteController@searchItem');
+// アイテム価格取得
+Route::get('item_getprice', 'ItemAutoCompleteController@getItemPrice');
 
 // 注文一覧
 Route::get('/admin/orders', 'OrderController@index');
