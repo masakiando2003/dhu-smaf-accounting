@@ -48,7 +48,13 @@
         <th scope="row">{{ $cashier_item->id }}</th>
         <td>{{ $cashier_item->transaction_time }}</td>
         <td>{{ ($cashier_item->cashier_type == 'income') ? '収入' : '支払' }}</td>
-        <td>{{ $cashier_item->description }}</td>
+        <td>
+          @if(preg_match('/注文/', $cashier_item->description))
+            <a href="/admin/orders/detail/{{$cashier_item->order_id}}" target="_blank">{{ $cashier_item->description }}</a>
+          @else
+            {{ $cashier_item->description }}
+          @endif
+        </td>
         <td>{{ $cashier_item->income_amount }}</td>
         <td>{{ $cashier_item->payment_amount }}</td>
         <td>{{ $cashier_item->deduction_amount }}</td>
