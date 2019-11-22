@@ -37,11 +37,11 @@ Route::get('/admin/orders/create', 'OrderController@CreateOrder');
 // 注文詳細
 Route::get('/admin/orders/detail/{id}', 'OrderController@ShowOrderDetail');
 // 注文登録
-Route::post('/admin/orders/register', 'ItemController@RegisterOrder');
+Route::post('/admin/orders/register', 'OrderController@RegisterOrder');
 // 注文編集
-Route::post('/admin/orders/edit', 'ItemController@EditOrder');
+Route::post('/admin/orders/edit', 'OrderController@EditOrder');
 // 注文削除
-Route::delete('/admin/orders/delete/', 'ItemController@DeleteOrder');
+Route::delete('/admin/orders/delete/', 'OrderController@DeleteOrder');
 
 
 // 現金出納帳一覧

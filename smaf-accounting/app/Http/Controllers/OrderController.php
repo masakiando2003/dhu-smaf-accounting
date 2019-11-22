@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 use App\Model\Order;
 use App\Model\OrderItem;
+use App\Model\Cashier;
 
 class OrderController extends Controller
 {
@@ -59,7 +60,14 @@ class OrderController extends Controller
         $page['submit'] = '更新';
 
         $orderDetail = Order::find($id);
-        return view('admin/orders/detail', compact('page', 'orderDetail'));
+        $orderItemDetail = OrderItem::where('order_id', $id)->get();
+        $order_total = 0;
+        foreach($orderItemDetail as $orderItem){
+            $order_total += ($orderItem->price * $orderItem->quantity);
+        }
+        $orderDetail->order_total = $order_total;
+        $orderDetail->change = $order_total - $orderDetail->paid;
+        return view('admin/orders/detail', compact('page', 'orderDetail', 'orderItemDetail'));
     }
 
     function GetOrderValidationErrorMessage() {
@@ -80,7 +88,7 @@ class OrderController extends Controller
 
     function RegisterOrder(Request $request)
     {
-        $validator = $this->GetItemValidator($request);
+        $validator = $this->GetOrderValidator($request);
         if ($validator->fails()) {
           return redirect()
                  ->back()
@@ -94,18 +102,39 @@ class OrderController extends Controller
         $new_order->change = $request->change;
         $new_order->remarks = $request->remarks;
         $new_order->save();
-        $order_id = $new_order->insert_id;
+        $order_id = $new_order->id;
 
         $order_item_count = $request->order_item_count;
+        $order_item_total = 0;
         for($i = 1; $i <= $order_item_count; $i++){
             $new_order_item = new OrderItem();
-            $new_order_item->order_id = $order_id;
-            //$new_order_item->item_id = $order_id;
-            $new_order_item->save();
+            if(isset($_POST['item_id_'.$i]) && $_POST['item_id_'.$i]!=''){
+                $new_order_item->order_id = $order_id;
+                $new_order_item->item_id = $_POST['item_id_'.$i];
+                $order_item_price = ($_POST['price_'.$i] !='') ? $_POST['price_'.$i] : 0;
+                $new_order_item->price = $order_item_price;
+                $order_item_quantity = ($_POST['quantity_'.$i] !='') ? $_POST['quantity_'.$i] : 0;
+                $new_order_item->quantity = $order_item_quantity;
+                $order_item_total += ($order_item_price * $order_item_quantity);
+                $new_order_item->save();
+            }
+        }
+
+        if($request->paid > 0){
+            // 直接出納記録を作成する
+            $new_cashier = new Cashier();
+            $new_cashier->transaction_time = date('Y-m-d H:i:s');
+            $new_cashier->cashier_type = 'income';
+            $new_cashier->description = '注文ID: '.$order_id.'に支払する';
+            $new_cashier->income_amount = $request->paid;
+            $new_cashier->payment_amount = $request->change;
+            $new_cashier->deduction_amount = $request->paid - $request->change;
+            $new_cashier->remarks = $request->remarks;
+            $new_cashier->save();
         }
 
         $msg="新規注文ID: \"$order_id\"を作成しました";
-        return redirect('/admin/items')->with('success_msg', $msg);
+        return redirect('/admin/orders')->with('success_msg', $msg);
     }
 
     function EditOrder(Request $request)

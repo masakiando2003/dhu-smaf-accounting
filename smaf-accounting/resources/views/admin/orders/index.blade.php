@@ -10,67 +10,61 @@
 
 @section('content')
 
+    @if($errors->any())
+        <div class="alert alert-danger">
+            @foreach($errors->all() as $error_msg)
+                {{ $error_msg }}<br/>
+            @endforeach
+        </div>
+    @endif
+    @if(session('success_msg'))
+        <div class="alert alert-success">
+            {{ session('success_msg') }}
+        </div>
+    @endif
+
 <div class="float-right py-3">
   <a href="/admin/orders/create" class="btn btn-primary">
     <span class="glyphicon glyphicon-plus">新規作成</span>
   </a>
 </div>
 
+<form action="/admin/orders/delete" method="POST">
+{{ csrf_field() }}
 <table class="table">
   <thead class="thead-light">
     <tr>
       <th scope="col">ID</th>
       <th scope="col">人数</th>
-      <th scope="col">購入個数</th>
-      <th scope="col">合計</th>
-      <th scope="col">支払額</th>
+      <th scope="col">合計金額</th>
+      <th scope="col">支払金額</th>
       <th scope="col">お釣り</th>
       <th scope="col">時間</th>
       <th scope="col">アクション</th>
     </tr>
   </thead>
   <tbody>
+    @foreach($orders as $order)
     <tr>
-      <th scope="row">1</th>
-      <td>1</td>
-      <td>1</td>
-      <td>140</td>
-      <td>150</td>
-      <td>10</td>
-      <td>2019/11/09 14:00:00</td>
-      <td>
-        <input type="button" class="btn btn-success" name="btnEdit" value="編集" />
-        <input type="button" class="btn btn-danger" name="btnEdit" value="削除" onclick="ConfirmDelete(1)" />
-      </td>
-    </tr>
-    <tr>
-      <th scope="row">2</th>
-      <td>1</td>
-      <td>2</td>
-      <td>400</td>
-      <td>500</td>
-      <td>100</td>
-      <td>2019/11/09 15:00:00</td>
-      <td>
-        <input type="button" class="btn btn-success" name="btnEdit" value="編集" />
-        <input type="button" class="btn btn-danger" name="btnEdit" value="削除" onclick="ConfirmDelete(2)" />
-      </td>
-    </tr>
-    <tr>
-      <th scope="row">3</th>
-      <td>1</td>
-      <td>1</td>
+      <th scope="row">{{ $order->id }}</th>
+      <td>{{ $order->num_of_people }}</td>
       <td>200</td>
-      <td>200</td>
-      <td>0</td>
-      <td>2019/11/10 12:00:00</td>
+      <td>{{ $order->paid }}</td>
+      <td>{{ $order->change }}</td>
+      <td>{{ $order->created_at->format('Y/m/d H:i:s') }}</td>
       <td>
-        <input type="button" class="btn btn-success" name="btnEdit" value="編集" />
-        <input type="button" class="btn btn-danger" name="btnEdit" value="削除" onclick="ConfirmDelete(3)" />
+      <a href="/admin/orders/detail/{{ $order->id }}" class="btn btn-success">編集</a>
+        <input type="submit" class="btn btn-danger" name="btnEdit" value="削除" onclick="return ConfirmDelete('{{ $order->id }}')" />
       </td>
     </tr>
+    @endforeach
+    <input type="hidden" name="del_id" id="del_id" />
+    <input type="hidden" name="_method" id="_method" />
+    <input type="hidden" name="display_items" id="display_items" value="{{ $display_items ?? '' }}" />
+    <input type="hidden" name="page" id="page" value="{{ $page ?? ''}}" />
   </tbody>
 </table>
+</form>
 @stop
 
 @section('js')
@@ -78,6 +72,8 @@
         function ConfirmDelete(order_id){
             var flag = false;
             if(confirm('注文#'+order_id+'を削除しても宜しいでしょうか?') == true){
+                document.getElementById('del_id').value = order_id;
+                document.getElementById('_method').value = "delete";
                 return true;
             }
             return flag;
