@@ -125,6 +125,7 @@ class OrderController extends Controller
             $new_cashier = new Cashier();
             $new_cashier->transaction_time = date('Y-m-d H:i:s');
             $new_cashier->cashier_type = 'income';
+            $new_cashier->order_id = $order_id;
             $new_cashier->description = '注文ID: '.$order_id.'に支払する';
             $new_cashier->income_amount = $request->paid;
             $new_cashier->payment_amount = $request->change;
@@ -178,7 +179,13 @@ class OrderController extends Controller
         try {
             $order = Order::find($order_id);
             $order->delete();
+
+            OrderItem::where('order_id', $order_id)->delete();
+
+            Cashier::where('order_id', $order_id)->delete();
+            
             $order->save();
+            
             DB::commit();
         } catch (\PDOException $e){
             DB::rollBack();
