@@ -2,89 +2,172 @@
 
 @extends('adminlte::page')
 
-@section('title', 'SmaF会計システム - 注文一覧')
+@section('title', 'SmaF会計システム - レポート')
 
 @section('content_header')
-    <h1>注文一覧</h1>
+    <h1>レポート</h1>
 @stop
 
 @section('content')
+<ul id="report_tabs" class="nav nav-tabs">
+    <li class="nav-item">
+        <a href="#company_info" class="nav-link active">会社紹介</a>
+    </li>
+    <li class="nav-item">
+        <a href="#company_members" class="nav-link">会社メンバー</a>
+    </li>
+    <li class="nav-item">
+        <a href="#order_report" class="nav-link">注文レポート</a>
+    </li>
+    <li class="nav-item">
+        <a href="#sale_report" class="nav-link">売上報告</a>
+    </li>
+</ul>
+<div class="tab-content">
+    <!--スペースをあげる-->
+    <div class="row">&nbsp;</div>
 
-<div class="float-right py-3">
-  <a href="#" class="btn btn-primary">
-    <span class="glyphicon glyphicon-plus">新規作成</span>
-  </a>
+    <!--会社紹介タブ開始-->
+    <div class="tab-pane fade show active" id="company_info">
+      <div class="row">
+          <div class="col-sm-2">会社名</div>
+          <div class="col-sm-4">{{ $company_info->company_name }}</div>
+      </div>
+      
+      <!--スペースをあげる-->
+      <div class="row">&nbsp;</div>
+
+      <div class="row">
+          <div class="col-sm-2">事業内容</div>
+          <div class="col-sm-4">{{ $company_info->description }}</div>
+      </div>
+      
+      <!--スペースをあげる-->
+      <div class="row">&nbsp;</div>
+
+      <div class="row">
+          <div class="col-sm-2">設立日</div>
+          <div class="col-sm-4">{{ $company_info->setup_date->format('Y年m月d日') }}</div>
+      </div>
+
+      <!--スペースをあげる-->
+      <div class="row">&nbsp;</div>
+
+      <div class="row">
+          <div class="col-sm-2">資本金</div>
+          <div class="col-sm-4">{{ $company_info->initial_captial }}円</div>
+      </div>
+      
+      <!--スペースをあげる-->
+      <div class="row">&nbsp;</div>
+
+      <div class="row">
+          <div class="col-sm-2">現金</div>
+          <div class="col-sm-4">{{ $company_info->cash }}円</div>
+      </div>
+
+      <!--スペースをあげる-->
+      <div class="row">&nbsp;</div>
+
+      <div class="row">
+          <div class="col-sm-2">解散日</div>
+          <div class="col-sm-4">{{ $company_info->end_date->format('Y年m月d日') }}</div>
+      </div>
+    </div>
+    <!--会社紹介タブ完了-->
+
+    <!--会社メンバータブ開始-->
+    <div class="tab-pane fade" id="company_members">
+      @foreach($company_members as $company_member)
+      <div class="row">
+          <div class="col-sm-2">氏名</div>
+          <div class="col-sm-4">{{ $company_member->name }}</div>
+      </div>
+
+      @if($company_member->email != '')
+      <!--スペースをあげる-->
+      <div class="row">&nbsp;</div>
+
+      <div class="row">
+          <div class="col-sm-2">メールアドレス</div>
+          <div class="col-sm-4">{{ $company_member->email }}</div>
+      </div> 
+      @endif
+      
+      <!--スペースをあげる-->
+      <div class="row">&nbsp;</div>
+
+      <div class="row">
+          <div class="col-sm-2">役</div>
+          <div class="col-sm-4">{{ ($company_member->role == 1) ? "代表取締役" : "取締役" }}</div>
+      </div>
+      
+      <!--スペースをあげる-->
+      <div class="row">&nbsp;</div>
+
+      <div class="row">
+          <div class="col-sm-2">役割</div>
+          <div class="col-sm-4">{{ $company_member->position }}</div>
+      </div>
+
+      <!--スペースをあげる-->
+      <div class="row">&nbsp;</div>
+
+      <div class="row">
+          <div class="col-sm-2">資金</div>
+          <div class="col-sm-4">{{ $company_member->capital }}円</div>
+      </div>
+      
+      <!--スペースをあげる-->
+      <div class="row">&nbsp;</div>
+
+      <div class="row">
+          <div class="col-sm-2">株数</div>
+          <div class="col-sm-4">{{ $company_member->num_of_share }}({{ $company_member->share_percentage }}%)</div>
+      </div>
+
+      <!--スペースをあげる-->
+      <div class="row">&nbsp;</div>
+
+      <div class="row">
+          <div class="col-sm-2">状態</div>
+          <div class="col-sm-4">{{ ($company_member->status == 1) ? '活性' : '非活性' }}</div>
+      </div>
+
+      <!--スペースをあげる-->
+      <div class="row">&nbsp;</div>
+
+      <!--スペースをあげる-->
+      <div class="row">&nbsp;</div>
+      @endforeach
+    </div>
+    <!--会社メンバータブ完了-->
+    
+    <div class="tab-pane fade" id="order_report">
+        <p>注文レポート工事中 ...</p>
+    </div>
+
+    <div class="tab-pane fade" id="sale_report">
+        <p>売上報告工事中 ...</p>
+    </div>
+
 </div>
-
-<table class="table">
-  <thead class="thead-light">
-    <tr>
-      <th scope="col">ID</th>
-      <th scope="col">人数</th>
-      <th scope="col">購入個数</th>
-      <th scope="col">合計</th>
-      <th scope="col">支払額</th>
-      <th scope="col">お釣り</th>
-      <th scope="col">時間</th>
-      <th scope="col">アクション</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th scope="row">1</th>
-      <td>1</td>
-      <td>1</td>
-      <td>140</td>
-      <td>150</td>
-      <td>10</td>
-      <td>2019/11/09 14:00:00</td>
-      <td>
-        <input type="button" class="btn btn-success" name="btnEdit" value="編集" />
-        <input type="button" class="btn btn-danger" name="btnEdit" value="削除" onclick="ConfirmDelete(1)" />
-      </td>
-    </tr>
-    <tr>
-      <th scope="row">2</th>
-      <td>1</td>
-      <td>2</td>
-      <td>400</td>
-      <td>500</td>
-      <td>100</td>
-      <td>2019/11/09 15:00:00</td>
-      <td>
-        <input type="button" class="btn btn-success" name="btnEdit" value="編集" />
-        <input type="button" class="btn btn-danger" name="btnEdit" value="削除" onclick="ConfirmDelete(2)" />
-      </td>
-    </tr>
-    <tr>
-      <th scope="row">3</th>
-      <td>1</td>
-      <td>1</td>
-      <td>200</td>
-      <td>200</td>
-      <td>0</td>
-      <td>2019/11/10 12:00:00</td>
-      <td>
-        <input type="button" class="btn btn-success" name="btnEdit" value="編集" />
-        <input type="button" class="btn btn-danger" name="btnEdit" value="削除" onclick="ConfirmDelete(3)" />
-      </td>
-    </tr>
-  </tbody>
-</table>
 @stop
 
 @section('css')
-    <link rel="stylesheet" href="/css/admin_custom.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
 @stop
 
 @section('js')
-    <script type="text/javascript">
-        function ConfirmDelete(order_id){
-            var flag = false;
-            if(confirm('注文#'+order_id+'を削除しても宜しいでしょうか?') == true){
-                return true;
-            }
-            return flag;
-        }
-    </script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+  <script type="text/javascript">
+    $(document).ready(function(){ 
+        $("#report_tabs a").click(function(e){
+            e.preventDefault();
+            $(this).tab('show');
+        });
+    });
+  </script>
 @stop
