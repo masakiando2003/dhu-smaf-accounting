@@ -7,9 +7,11 @@ use Illuminate\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
+use App\Model\Item;
 use App\Model\Order;
 use App\Model\OrderItem;
 use App\Model\Cashier;
+use App\Model\CompanyInfo;
 
 use Carbon\Carbon;
 
@@ -109,15 +111,21 @@ class OrderController extends Controller
         $order_item_count = $request->order_item_count;
         $order_item_total = 0;
         for($i = 1; $i <= $order_item_count; $i++){
-            if(isset($_POST['item_id_'.$i]) && $_POST['item_id_'.$i]!='' &&
-                $_POST['delete_item_'.$i] == ''){
+            if(isset($_POST['item_id_'.$i]) && $_POST['item_id_'.$i]!=''){
+                $item_id = $_POST['item_id_'.$i];
                 $new_order_item = new OrderItem();
                 $new_order_item->order_id = $order_id;
-                $new_order_item->item_id = $_POST['item_id_'.$i];
+                $new_order_item->item_id = $item_id;
                 $order_item_price = ($_POST['price_'.$i] !='') ? $_POST['price_'.$i] : 0;
                 $order_item_quantity = ($_POST['quantity_'.$i] !='') ? $_POST['quantity_'.$i] : 0;
+                $new_order_item->price = $order_item_price;
+                $new_order_item->quantity = $order_item_quantity;
                 $order_item_total += $order_item_price * $order_item_quantity;
-                $new_order_item->save();
+                if(!isset($_POST['delete_item_'.$i])){
+                    $new_order_item->save();
+                    //在庫数更新
+                    Item::where('id', $item_id)->decrement('stock', $order_item_quantity);
+                }
             }
         }
 
@@ -139,6 +147,9 @@ class OrderController extends Controller
             $new_cashier->deduction_amount = $request->paid - $request->change;
             $new_cashier->remarks = $request->remarks;
             $new_cashier->save();
+
+            //会社の現金を更新する
+            CompanyInfo::increment('cash', $order_item_total);
         }
 
         $msg="新規注文ID: \"$order_id\"を作成しました";
@@ -172,12 +183,20 @@ class OrderController extends Controller
                 'updated_at'    => Carbon::now()
              ]);
 
+        $old_order_item_total = OrderItem::where('order_id', $order_id)
+                                ->sum('price', 'quantity');
+
         $order_item_count = $request->order_item_count;
         $order_item_total = 0;
         for($i = 1; $i <= $order_item_count; $i++){
             if(isset($_POST['item_id_'.$i]) && $_POST['item_id_'.$i]!=''){
                 if(isset($_POST['delete_item_'.$i]) && $_POST['delete_item_'.$i]!=''){
                     $item_id = intval($_POST['item_id_'.$i]);
+                    // 在庫数更新
+                    $order_item_info = OrderItem::where('order_id', $order_id)
+                                                ->where('item_id', $item_id)->get();
+                    $old_order_item_quantity = $order_item_info->quantity;
+                    Item::where('id', $item_id)->increment('stock', $old_order_item_quantity_count);
                     OrderItem::where('order_id', $order_id)->where('item_id', $item_id)
                               ->delete();
                 } else {
@@ -186,7 +205,13 @@ class OrderController extends Controller
                     $order_item_quantity = ($_POST['quantity_'.$i] !='') ? intval($_POST['quantity_'.$i]) : 0;
                     $order_item_total += $order_item_price * $order_item_quantity;
                     $order_item_exist_count = OrderItem::where('order_id', $order_id)->where('item_id', $item_id)->count();
+                    
                     if($order_item_exist_count > 0){
+                        // 在庫数更新
+                        $order_item_info = OrderItem::where('order_id', $order_id)
+                                                    ->where('item_id', $item_id)->get()->first();
+                        $old_order_item_quantity = $order_item_info->quantity;
+                        Item::where('id', $item_id)->increment('stock', $old_order_item_quantity);
                         OrderItem::where('order_id', $order_id)->where('item_id', $item_id)
                                  ->update([
                                     'item_id'       => $item_id,
@@ -194,6 +219,7 @@ class OrderController extends Controller
                                     'quantity'      => $order_item_quantity,
                                     'updated_at'    => Carbon::now()
                         ]);
+                        Item::where('id', $item_id)->decrement('stock', $order_item_quantity);
                     } else {
                         $new_order_item = new OrderItem();
                         $new_order_item->order_id = $order_id;
@@ -201,6 +227,8 @@ class OrderController extends Controller
                         $new_order_item->price = $order_item_price;
                         $new_order_item->quantity = $order_item_quantity;
                         $new_order_item->save();
+                        // 在庫数更新
+                        Item::where('id', $item_id)->decrement('stock', $order_item_quantity);
                     }
                 }
             }
@@ -220,6 +248,10 @@ class OrderController extends Controller
                 'remarks'           => $request->remarks,
                 'updated_at'        => Carbon::now(),
             ]);
+
+        //会社の現金を更新する
+        CompanyInfo::decrement('cash', $old_order_item_total);
+        CompanyInfo::increment('cash', $order_item_total);
         
         $msg = "注文ID: \"$order_id\"を更新しました";
         return redirect('/admin/orders')->with('success_msg', $msg);
@@ -234,6 +266,11 @@ class OrderController extends Controller
             $order = Order::find($order_id);
             $order->delete();
 
+            // 在庫数更新
+            $order_items = OrderItem::where('order_id', $order_id)->get();
+            foreach($order_items as $order_item){
+                Item::where('id', $order_item->item_id)->increment('stock', $order_item->quantity);
+            }
             OrderItem::where('order_id', $order_id)->delete();
 
             Cashier::where('order_id', $order_id)->delete();
