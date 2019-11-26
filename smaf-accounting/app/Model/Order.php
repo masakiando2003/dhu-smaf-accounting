@@ -73,6 +73,19 @@ class Order extends Model
         return $orderitems_count;
     }
 
+    public function GetOrderItemsTotalCount($dates)
+    {
+        $start_date = $dates[0];
+        $end_date = $dates[count($dates)-1];
+        $orderitems_count = Order::join('order_items', function($join){
+                            $join->on('orders.id', '=', 'order_items.order_id');
+                       })
+                       ->where('orders.created_at', '>=', $start_date." 00:00:00")
+                       ->where('orders.created_at', '<=', $end_date." 23:59:59")
+                       ->count();
+        return $orderitems_count;
+    }
+
     public function GetOrderItemsSellAmountByDate(string $date, int $item_id=0)
     {
         $order_query = Order::join('order_items', function($join){
@@ -85,6 +98,19 @@ class Order extends Model
         }
         $order_total = $order_query->sum('order_items.price', 'order_items.quantity');
 
+        return $order_total;
+    }
+
+    public function GetOrderItemsTotalSellAmount($dates)
+    {
+        $start_date = $dates[0];
+        $end_date = $dates[count($dates)-1];
+        $order_total = Order::join('order_items', function($join){
+                        $join->on('orders.id', '=', 'order_items.order_id');
+                       })
+                       ->where('orders.created_at', '>=', $start_date." 00:00:00")
+                       ->where('orders.created_at', '<=', $end_date." 23:59:59")
+                       ->sum('order_items.price', 'order_items.quantity');
         return $order_total;
     }
 }

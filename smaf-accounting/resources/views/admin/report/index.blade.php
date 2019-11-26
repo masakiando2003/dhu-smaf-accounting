@@ -75,7 +75,7 @@
     </div>
 
     <div class="tab-pane fade" id="sale_report">
-    <div class="row">
+        <div class="row">
             <div class="col-sm-6">
                 @foreach($sell_dates as $sell_date)
                 <div class="row">
@@ -178,6 +178,49 @@
 
                 @endforeach
             </div>
+        </div>
+
+        <!--スペースをあげる-->
+        <div class="row">
+            <div class="col-sm-12">&nbsp;</div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-2">&nbsp;</div>
+            <div class="col-sm-10 text-left">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <strong>{{ $sell_dates[0] }}から{{ $sell_dates[count($sell_dates)-1] }}までの合計注文数:</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <strong>{{ $orders->GetOrderItemsTotalCount($sell_dates) }}</strong>
+                    </div>
+                </div>
+                
+                <!--スペースをあげる-->
+                <div class="row">
+                    <div class="col-sm-12">&nbsp;</div>
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-6">
+                        <strong>{{ $sell_dates[0] }}から{{ $sell_dates[count($sell_dates)-1] }}までの合計売上高:</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <strong>{{ $orders->GetOrderItemsTotalSellAmount($sell_dates) }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!--スペースをあげる-->
+        <div class="row">
+            <div class="col-sm-12">&nbsp;</div>
+        </div>
+
+        <!--スペースをあげる-->
+        <div class="row">
+            <div class="col-sm-12">&nbsp;</div>
         </div>
     </div>
 
