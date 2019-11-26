@@ -17,6 +17,9 @@
         <a href="#sale_report" class="nav-link">売上報告</a>
     </li>
     <li class="nav-item">
+        <a href="#balance_sheet" class="nav-link">貸借対照表</a>
+    </li>
+    <li class="nav-item">
         <a href="#company_info" class="nav-link">会社紹介</a>
     </li>
     <li class="nav-item">
@@ -47,14 +50,14 @@
                             <tr>
                                 <th>&nbsp;</th>
                                 @foreach($items as $item)
-                                    <th>{{ $item->name }}</th>
+                                    <th width="15%">{{ $item->name }}</th>
                                 @endforeach
                             </tr>
                             @foreach($time_periods as $time_period)
                                 <tr>
                                     <th>{{ $time_period }}</th>
                                     @foreach($items as $item)
-                                        <th>{{ $orders->GetOrdersCountByItemAndTimePeriod($item->id, $sell_date, $time_period) }}</th>
+                                        <th>{{ $orders->GetOrdersCountByItemAndTimePeriod($item->id, $sell_date, $time_period) }}個</th>
                                     @endforeach
                                 </tr>
                             @endforeach
@@ -94,7 +97,7 @@
                             <strong>{{ $item->name}}の注文数: </strong>
                         </div>
                         <div class="col-sm-6 text-left">
-                            <strong>{{ $orders->GetOrderItemsCountByDate($sell_date, $item->id)}}</strong>
+                            <strong>{{ $orders->GetOrderItemsCountByDate($sell_date, $item->id)}}個</strong>
                         </div>
                     </div>
                     @endforeach
@@ -109,7 +112,7 @@
                             <strong>合計注文数: </strong>
                         </div>
                         <div class="col-sm-6 text-left">
-                            <strong>{{ $orders->GetOrdersCountByDate($sell_date)}}</strong>
+                            <strong>{{ $orders->GetOrdersCountByDate($sell_date)}}個</strong>
                         </div>
                     </div>
 
@@ -145,7 +148,7 @@
                             <strong>{{ $item->name}}の売上高: </strong>
                         </div>
                         <div class="col-sm-6 text-left">
-                            <strong>{{ $orders->GetOrderItemsSellAmountByDate($sell_date, $item->id)}}</strong>
+                            <strong>{{ $orders->GetOrderItemsSellAmountByDate($sell_date, $item->id)}}円</strong>
                         </div>
                     </div>
                     @endforeach
@@ -160,7 +163,7 @@
                             <strong>合計売上高: </strong>
                         </div>
                         <div class="col-sm-6 text-left">
-                            <strong>{{ $orders->GetOrderItemsSellAmountByDate($sell_date)}}</strong>
+                            <strong>{{ $orders->GetOrderItemsSellAmountByDate($sell_date)}}円</strong>
                         </div>
                     </div>
 
@@ -193,7 +196,7 @@
                         <strong>{{ $sell_dates[0] }}から{{ $sell_dates[count($sell_dates)-1] }}までの合計注文数:</strong>
                     </div>
                     <div class="col-sm-6">
-                        <strong>{{ $orders->GetOrderItemsTotalCount($sell_dates) }}</strong>
+                        <strong>{{ $orders->GetOrderItemsTotalCount($sell_dates) }}個</strong>
                     </div>
                 </div>
                 
@@ -207,7 +210,7 @@
                         <strong>{{ $sell_dates[0] }}から{{ $sell_dates[count($sell_dates)-1] }}までの合計売上高:</strong>
                     </div>
                     <div class="col-sm-6">
-                        <strong>{{ $orders->GetOrderItemsTotalSellAmount($sell_dates) }}</strong>
+                        <strong>{{ $orders->GetOrderItemsTotalSellAmount($sell_dates) }}円</strong>
                     </div>
                 </div>
             </div>
@@ -221,6 +224,40 @@
         <!--スペースをあげる-->
         <div class="row">
             <div class="col-sm-12">&nbsp;</div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="balance_sheet">
+        <div class="row">
+            <div class="col-sm-6">
+                <table class="table table-bordered dataTable">
+                    <tr><th colspan=2 class="text-center">資産</th></tr>
+                    
+                    <tr><th>合計:</th><td>0円</td></tr>
+                </table>
+            </div>
+            
+            <div class="col-sm-6">
+                <table class="table table-bordered dataTable">
+                    <tr><th colspan=2 class="text-center">費用</th></tr>
+                    <tr><th>合計:</th><td>0円</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <!--スペースをあげる-->
+        <div class="row">&nbsp;</div>
+
+        <!--スペースをあげる-->
+        <div class="row">&nbsp;</div>
+
+        <div class="row">
+            <div class="col-sm-6 text-right">
+                <strong>利益:</strong>
+            </div>
+            <div class="col-sm-6">
+                <strong>0円</strong>
+            </div>
         </div>
     </div>
 
