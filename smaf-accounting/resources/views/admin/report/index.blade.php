@@ -11,24 +11,178 @@
 @section('content')
 <ul id="report_tabs" class="nav nav-tabs">
     <li class="nav-item">
-        <a href="#company_info" class="nav-link active">会社紹介</a>
-    </li>
-    <li class="nav-item">
-        <a href="#company_members" class="nav-link">会社メンバー</a>
-    </li>
-    <li class="nav-item">
-        <a href="#order_report" class="nav-link">注文レポート</a>
+        <a href="#order_report" class="nav-link active">注文レポート</a>
     </li>
     <li class="nav-item">
         <a href="#sale_report" class="nav-link">売上報告</a>
+    </li>
+    <li class="nav-item">
+        <a href="#company_info" class="nav-link">会社紹介</a>
+    </li>
+    <li class="nav-item">
+        <a href="#company_members" class="nav-link">会社メンバー</a>
     </li>
 </ul>
 <div class="tab-content">
     <!--スペースをあげる-->
     <div class="row">&nbsp;</div>
 
+    <div class="tab-pane fade show active" id="order_report">
+        <div class="row">
+            <div class="col-sm-12">
+                @foreach($sell_dates as $sell_date)
+                <div class="row">
+                    <div class="col-sm-12 text-left"><strong>{{ $sell_date }}</strong></div>
+                </div>
+
+                <!--スペースをあげる-->
+                <div class="row">
+                    <div class="col-sm-12">&nbsp;</div>
+                </div>
+
+                @if(count($items) > 0)
+                <div class="row">
+                    <div class="col-sm-12 text-left">
+                        <table class="table table-bordered dataTable">
+                            <tr>
+                                <th>&nbsp;</th>
+                                @foreach($items as $item)
+                                    <th>{{ $item->name }}</th>
+                                @endforeach
+                            </tr>
+                            @foreach($time_periods as $time_period)
+                                <tr>
+                                    <th>{{ $time_period }}</th>
+                                    @foreach($items as $item)
+                                        <th>{{ $orders->GetOrdersCountByItemAndTimePeriod($item->id, $sell_date, $time_period) }}</th>
+                                    @endforeach
+                                </tr>
+                            @endforeach
+                        </table>
+                    </div>
+                </div>
+                @else
+                <div class="row">
+                    <div class="col-sm-12 text-left">
+                        申し訳ございません、アイテムが存在しません。先にアイテムを作成してください。
+                    </div>
+                </div> 
+                @endif
+
+                @endforeach
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="sale_report">
+    <div class="row">
+            <div class="col-sm-6">
+                @foreach($sell_dates as $sell_date)
+                <div class="row">
+                    <div class="col-sm-12 text-left"><strong>{{ $sell_date }}</strong></div>
+                </div>
+
+                <!--スペースをあげる-->
+                <div class="row">
+                    <div class="col-sm-12">&nbsp;</div>
+                </div>
+
+                @if(count($items) > 0)
+                    @foreach($items as $item)
+                    <div class="row">
+                        <div class="col-sm-6 text-left">
+                            <strong>{{ $item->name}}の注文数: </strong>
+                        </div>
+                        <div class="col-sm-6 text-left">
+                            <strong>{{ $orders->GetOrderItemsCountByDate($sell_date, $item->id)}}</strong>
+                        </div>
+                    </div>
+                    @endforeach
+
+                    <!--スペースをあげる-->
+                    <div class="row">
+                        <div class="col-sm-12">&nbsp;</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-sm-6 text-left">
+                            <strong>合計注文数: </strong>
+                        </div>
+                        <div class="col-sm-6 text-left">
+                            <strong>{{ $orders->GetOrdersCountByDate($sell_date)}}</strong>
+                        </div>
+                    </div>
+
+                    <!--スペースをあげる-->
+                    <div class="row">
+                        <div class="col-sm-12">&nbsp;</div>
+                    </div>
+                @else
+                    <div class="row">
+                        <div class="col-sm-12 text-left">
+                            申し訳ございません、アイテムが存在しません。先にアイテムを作成してください。
+                        </div>
+                    </div>
+                @endif
+
+                @endforeach
+            </div>
+            <div class="col-sm-6">
+                @foreach($sell_dates as $sell_date)
+                <div class="row">
+                    <div class="col-sm-12 text-left">&nbsp;</div>
+                </div>
+
+                <!--スペースをあげる-->
+                <div class="row">
+                    <div class="col-sm-12">&nbsp;</div>
+                </div>
+
+                @if(count($items) > 0)
+                    @foreach($items as $item)
+                    <div class="row">
+                        <div class="col-sm-6 text-left">
+                            <strong>{{ $item->name}}の売上高: </strong>
+                        </div>
+                        <div class="col-sm-6 text-left">
+                            <strong>{{ $orders->GetOrderItemsSellAmountByDate($sell_date, $item->id)}}</strong>
+                        </div>
+                    </div>
+                    @endforeach
+
+                    <!--スペースをあげる-->
+                    <div class="row">
+                        <div class="col-sm-12">&nbsp;</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-sm-6 text-left">
+                            <strong>合計売上高: </strong>
+                        </div>
+                        <div class="col-sm-6 text-left">
+                            <strong>{{ $orders->GetOrderItemsSellAmountByDate($sell_date)}}</strong>
+                        </div>
+                    </div>
+
+                    <!--スペースをあげる-->
+                    <div class="row">
+                        <div class="col-sm-12">&nbsp;</div>
+                    </div>
+                @else
+                    <div class="row">
+                        <div class="col-sm-12 text-left">
+                            申し訳ございません、アイテムが存在しません。先にアイテムを作成してください。
+                        </div>
+                    </div>
+                @endif
+
+                @endforeach
+            </div>
+        </div>
+    </div>
+
     <!--会社紹介タブ開始-->
-    <div class="tab-pane fade show active" id="company_info">
+    <div class="tab-pane fade " id="company_info">
       <div class="row">
           <div class="col-sm-2">会社名</div>
           <div class="col-sm-4">{{ $company_info->company_name }}</div>
@@ -142,15 +296,6 @@
       @endforeach
     </div>
     <!--会社メンバータブ完了-->
-    
-    <div class="tab-pane fade" id="order_report">
-        <p>注文レポート工事中 ...</p>
-    </div>
-
-    <div class="tab-pane fade" id="sale_report">
-        <p>売上報告工事中 ...</p>
-    </div>
-
 </div>
 @stop
 

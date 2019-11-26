@@ -105,6 +105,7 @@ class OrderController extends Controller
         $new_order->paid = $request->paid;
         $new_order->change = $request->change;
         $new_order->remarks = $request->remarks;
+        $new_order->created_at = Carbon::now();
         $new_order->save();
         $order_id = $new_order->id;
 
@@ -121,6 +122,7 @@ class OrderController extends Controller
                 $new_order_item->price = $order_item_price;
                 $new_order_item->quantity = $order_item_quantity;
                 $order_item_total += $order_item_price * $order_item_quantity;
+                $new_order_item->created_at = Carbon::now();
                 if(!isset($_POST['delete_item_'.$i])){
                     $new_order_item->save();
                     //在庫数更新
@@ -146,6 +148,7 @@ class OrderController extends Controller
             $new_cashier->payment_amount = $request->change;
             $new_cashier->deduction_amount = $request->paid - $request->change;
             $new_cashier->remarks = $request->remarks;
+            $new_cashier->created_at = Carbon::now();
             $new_cashier->save();
 
             //会社の現金を更新する
