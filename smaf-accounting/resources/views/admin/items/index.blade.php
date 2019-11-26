@@ -40,7 +40,7 @@
       <th scope="col">サイズ</th>
       <th scope="col">重量</th>
       <th scope="col">重量単位</th>
-      <th scope="col">作成日付</th>
+      <th scope="col">在庫数</th>
       <th scope="col">最終更新日付</th>
       <th scope="col">アクション</th>
     </tr>
@@ -54,7 +54,7 @@
       <td>{{ $item->size }}</td>
       <td>{{ $item->weight }}</td>
       <td>{{ $item->weight_unit }}</td>
-      <td>{{ $item->created_at->format('Y/m/d') }}</td>
+      <td>{{ $item->stock }}</td>
       <td>{{ $item->updated_at->format('Y/m/d') }}</td>
       <td>
         <a href="/admin/items/detail/{{ $item->id }}" class="btn btn-success">編集</a>

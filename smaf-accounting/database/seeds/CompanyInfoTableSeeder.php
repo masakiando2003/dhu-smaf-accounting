@@ -16,6 +16,7 @@ class CompanyInfoTableSeeder extends Seeder
                 'company_name'      => '株式会社SmaF',
                 'description'       => '綿菓子、ポテト、ポップコーン販売',
                 'setup_date'        => '2019-11-02',
+                'end_date'          => '2019-12-04',
                 'initial_captial'   => 32000,
                 'cash'              => 32000
             ],
