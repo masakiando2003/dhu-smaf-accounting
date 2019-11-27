@@ -8,6 +8,7 @@ use App\Model\CompanyInfo;
 use App\Model\CompanyMembers;
 use App\Model\Order;
 use App\Model\Item;
+use App\Model\Cashier;
 
 class ReportController extends Controller
 {
@@ -29,8 +30,13 @@ class ReportController extends Controller
             '16:00 - 16:59'
         ];
         $items = Item::get();
+        $profit = 0;
+        $income = 0;
+        $expenditure = 0;
+        $expenses = Cashier::get();
         return view('admin/report/index', 
                     compact('company_info', 'company_members', 'orders', 
-                            'items', 'sell_dates', 'time_periods'));
+                            'items', 'sell_dates', 'time_periods', 
+                            'profit', 'income', 'expenditure', 'expenses'));
     }
 }

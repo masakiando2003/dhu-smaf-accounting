@@ -229,24 +229,43 @@
 
     <div class="tab-pane fade" id="balance_sheet">
         <div class="row">
+            <div class="col-sm-6 text-right">
+                <strong>会社設立資本金: </strong>
+            </div>
+            <div class="col-sm-6">
+                <strong>{{ $company_info->initial_captial }}</strong>円
+            </div>
+        </div>
+
+        <!--スペースをあげる-->
+        <div class="row">
+            <div class="col-sm-12">&nbsp;</div>
+        </div>
+
+        <div class="row">
             <div class="col-sm-6">
                 <table class="table table-bordered dataTable">
-                    <tr><th colspan=2 class="text-center">資産</th></tr>
-                    
-                    <tr><th>合計:</th><td>0円</td></tr>
+                    <tr><th colspan=2 class="text-center">収益</th></tr>
+                    @foreach($sell_dates as $sell_date)
+                        <tr>
+                            <th>{{$sell_date}}の売上高:</th>
+                            <td><strong>{{ $orders->GetOrderItemsSellAmountByDate($sell_date) }}円</strong></td>
+                        </tr>
+                        @php
+                            $income += $orders->GetOrderItemsSellAmountByDate($sell_date)
+                        @endphp
+                    @endforeach
+                    <tr><th>合計:</th><td><strong>{{ $income ?? 0 }}円</strong></td></tr>
                 </table>
             </div>
             
             <div class="col-sm-6">
                 <table class="table table-bordered dataTable">
                     <tr><th colspan=2 class="text-center">費用</th></tr>
-                    <tr><th>合計:</th><td>0円</td></tr>
+                    <tr><th>合計:</th><td><strong>{{ $expenditure ?? 0 }}円</strong></td></tr>
                 </table>
             </div>
         </div>
-
-        <!--スペースをあげる-->
-        <div class="row">&nbsp;</div>
 
         <!--スペースをあげる-->
         <div class="row">&nbsp;</div>
@@ -255,8 +274,20 @@
             <div class="col-sm-6 text-right">
                 <strong>利益:</strong>
             </div>
-            <div class="col-sm-6">
-                <strong>0円</strong>
+            <div class="col-sm-6 @if($income - $expenditure < 0) {{ "text-danger" }} @endif">
+                <strong>{{ $income - $expenditure ?? 0 }}円</strong>
+            </div>
+        </div>
+
+        <!--スペースをあげる-->
+        <div class="row">&nbsp;</div>
+
+        <div class="row">
+            <div class="col-sm-6 text-right">
+                <strong>会社解散時現金:</strong>
+            </div>
+            <div class="col-sm-6 @if($income - $expenditure < 0) {{ "text-danger" }} @endif">
+                <strong>{{ $company_info->initial_captial +  $income - $expenditure ?? 0 }}円</strong>
             </div>
         </div>
     </div>
