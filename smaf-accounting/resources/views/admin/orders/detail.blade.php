@@ -21,22 +21,43 @@
         <div class="box-body">
             <form action="{{ $page['action'] }}" id="orders" name="orders"
             method='post'>
+            {{ csrf_field() }}
+
             @isset($orderDetail->id)
                 <input type="hidden" name="order_id" id="order_id"
                        value="{{ $orderDetail->id ?? '' }}" />
             @endisset
 
-            {{ csrf_field() }}
-
-            @if(isset($orderDetail->created_at))
             <div class="row">
-                <div class="col-sm-2">時間</div>
-                <div class="col-sm-4">{{ $orderDetail->created_at->format('Y/m/d H:i:s') ?? '' }}</div>
+                <div class="col-sm-2">
+                    <input type="radio" name="transactionTimeType" id="transaction_auto" value="auto" checked
+                    onclick="ChangeTransactionType()" />自動採番
+                </div>
+                <div class="col-sm-2">
+                    <input type="radio" name="transactionTimeType" id="transaction_manual" value="manual"
+                    onclick="ChangeTransactionType()" />入力
+                </div>
+                <div id="time_label" class="col-sm-4" @if(!isset($orderDetail->id)) style="display:none;" @endif>
+                    <div>@isset($orderDetail->created_at){{ $orderDetail->created_at->format('Y/m/d H:i:s') ?? '' }}@endisset</div>
+                </div>
+                <div id="time_input" class="col-sm-4" style="display:none;">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <input type="text" name="transactionDate" id="transactionDate"
+                            class="form-control datepicker" placeholder="年/月/日"
+                            value="@if(isset($orderDetail->created_at)){{ $orderDetail->created_at->format('Y/m/d') ?? '' }}@else{{old('transactionDate') ?? ''}}@endif" />
+                        </div>
+                        <div class="col-sm-6">
+                            <input type="text" name="transactionTime" id="transactionTime"
+                            class="form-control timepicker" placeholder="時間:分:秒"
+                            value="@if(isset($orderDetail->created_at)){{ $orderDetail->created_at->format('H:i:s') ?? '' }}@else{{old('transactionTime') ?? ''}}@endif" />
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <!--スペースをあげる-->
             <div class="row">&nbsp;</div>
-            @endif
 
             <div class="row">
                 <div class="col-sm-2">人数<span class="required">*</span></div>
@@ -182,6 +203,7 @@
 @stop
 
 @section('css')
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/css/bootstrap-datetimepicker.min.css" rel="stylesheet">
     <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <link href="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
 @stop
@@ -189,7 +211,26 @@
 @section('js')
     <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/js/bootstrap-datetimepicker.min.js"></script>
     <script type="text/javascript">
+
+    $('.datepicker').datepicker({ dateFormat: 'yy/mm/dd' });
+    $('.timepicker').datetimepicker({ format: 'HH:mm:ss' });
+
+    function ChangeTransactionType()
+    {
+        if(document.getElementById('transaction_auto').checked == true)
+        {
+            document.getElementById('time_label').style.display = "";
+            document.getElementById('time_input').style.display = "none";
+        }
+        else if(document.getElementById('transaction_manual').checked == true)
+        {
+            document.getElementById('time_label').style.display = "none";
+            document.getElementById('time_input').style.display = "";
+        }
+    }
 
     $( ".item_search" ).autocomplete({
         source: function(request, response) {

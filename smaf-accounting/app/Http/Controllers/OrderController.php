@@ -109,7 +109,15 @@ class OrderController extends Controller
         $new_order->paid = $request->paid;
         $new_order->change = $request->change;
         $new_order->remarks = $request->remarks;
-        $new_order->created_at = Carbon::now();
+        if($request->transactionTimeType == 'manual')
+        {
+            $formatted_date = date('Y-m-d', strtotime($request->transactionDate));
+            $new_order->created_at = $formatted_date.' '.$request->transactionTime;
+        }
+        else
+        {
+            $new_order->created_at = Carbon::now();
+        }
         $new_order->save();
         $order_id = $new_order->id;
 
@@ -246,6 +254,15 @@ class OrderController extends Controller
              ->update([
                 'change' => $change
         ]);
+
+        if($request->transactionTimeType == 'manual'){
+            $formatted_date = date('Y-m-d', strtotime($request->transactionDate));
+            $request->transaction_time = $formatted_date.' '.$request->transactionTime;
+            Order::where('id', $order_id)
+             ->update([
+                'created_at' => $request->transaction_time
+             ]);
+        }
 
         Cashier::where('order_id', $order_id)
                 ->update([

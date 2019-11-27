@@ -40,13 +40,13 @@
                             <input type="radio" name="transactionTimeType" id="transaction_manual" value="manual"
                             onclick="ChangeTransactionType()" />入力
                         </div>
-                        <div id="time_label" class="col-sm-2" @if(!isset($cashierDetail->id)) style="display:none;" @endif>
+                        <div id="time_label" class="col-sm-4" @if(!isset($cashierDetail->id)) style="display:none;" @endif>
                             <div>
                                 @if(isset($cashierDetail->transactionDate)){{ $cashierDetail->transactionDate ?? '' }}@endif&nbsp;
                                 @if(isset($cashierDetail->transactionTime)){{ $cashierDetail->transactionTime ?? '' }}@endif
                             </div>
                         </div>
-                        <div id="time_input" class="col-sm-4" @if(isset($cashierDetail->id)) style="display:none;" @endif>
+                        <div id="time_input" class="col-sm-4" style="display:none">
                             <div class="row">
                                 <div class="col-sm-6">
                                     <input type="text" name="transactionDate" id="transactionDate"

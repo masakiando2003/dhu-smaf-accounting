@@ -101,7 +101,7 @@ class CashierController extends Controller
         }
         else
         {
-            $new_cashier->transaction_time = date('Y-m-d H:i:s');
+            $new_cashier->transaction_time = Carbon::now();
         }
         $new_cashier->cashier_type = $request->type;
         $new_cashier->description = $request->description;
