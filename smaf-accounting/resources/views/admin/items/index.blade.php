@@ -64,12 +64,36 @@
     @endforeach
   </tbody>
 </table>
-<input type="hidden" name="del_id" id="del_id" />
-<input type="hidden" name="del_name" id="del_name" />
-<input type="hidden" name="_method" id="_method">
-<input type="hidden" name="display_items" id="display_items" value="{{ $display_items ?? '' }}" />
-<input type="hidden" name="page" id="page" value="{{ $page ?? ''}}" />
-</form>
+<div class="row">
+    <div class="col-sm-9 text-left">
+        @if($start_record < $end_record)
+            {{ $start_record }} - {{ $end_record }} 件表示 / {{ $total_count }}件
+        @else
+            {{ $end_record }} 件表示 / {{ $total_count }}件
+        @endif
+    </div>
+    <div class="col-sm-3 text-right">
+        {{-- paginate --}}
+        @if($items->hasPages())
+            {!! $items->appends($pagination_params)->links('pagination.default') !!}
+        @else
+            <div class="g_pager">
+                <ul class="pagination text-right">
+                    <li class="page-item active">
+                        <a class="page-link" href="#">1</a>
+                    </li>
+                </ul>
+            </div>
+        @endif
+        {{-- / paginate --}}
+    </div>
+  </div>
+  <input type="hidden" name="del_id" id="del_id" />
+  <input type="hidden" name="del_name" id="del_name" />
+  <input type="hidden" name="_method" id="_method">
+  <input type="hidden" name="display_items" id="display_items" value="{{ $display_items ?? '' }}" />
+  <input type="hidden" name="page" id="page" value="{{ $page ?? ''}}" />
+  </form>
 @stop
 
 @section('js')

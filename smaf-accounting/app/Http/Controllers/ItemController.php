@@ -26,17 +26,21 @@ class ItemController extends Controller
         }
         $display_items = $paginate;
         $query = Item::orderBy('id', 'asc');
+        $total_count = $query->count();
         $items = $query->paginate($paginate);
         if(count($items)<=0){
             $items = $query->paginate($paginate, ['*'], 'page', 1);
             $page = 1;
         }
+        $start_record = ($page - 1) * $paginate + 1;
+        $end_record = ($page * $paginate >= count($items) ) ? count($items) : $page * $paginate;
 
         $pagination_params = [
             "display_items" => $display_items,
         ];
 
-        return view('admin/items/index', compact('items', 'display_items', 'pagination_params'));
+        return view('admin/items/index', compact('items', 'start_record', 'end_record', 'total_count',
+                                                 'display_items', 'pagination_params'));
     }
     
     function CreateItem()

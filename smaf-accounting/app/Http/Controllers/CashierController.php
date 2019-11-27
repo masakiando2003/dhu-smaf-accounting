@@ -26,17 +26,21 @@ class CashierController extends Controller
         }
         $display_items = $paginate;
         $query = Cashier::orderBy('id', 'asc');
+        $total_count = $query->count();
         $cashier = $query->paginate($paginate);
         if(count($cashier)<=0){
             $cashier = $query->paginate($paginate, ['*'], 'page', 1);
             $page = 1;
         }
+        $start_record = ($page - 1) * $paginate + 1;
+        $end_record = ($page * $paginate >= count($cashier) ) ? count($cashier) : $page * $paginate;
 
         $pagination_params = [
             "display_items" => $display_items,
         ];
 
-    return view('admin/cashier/index', compact('cashier', 'display_items', 'pagination_params'));
+    return view('admin/cashier/index', compact('cashier', 'start_record', 'end_record', 'total_count',
+                                               'display_items', 'pagination_params'));
     }
     
     function CreateCashier()

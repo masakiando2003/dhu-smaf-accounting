@@ -32,17 +32,21 @@ class OrderController extends Controller
         }
         $display_items = $paginate;
         $query = Order::orderBy('id', 'asc');
+        $total_count = $query->count();
         $orders = $query->paginate($paginate);
         if(count($orders)<=0){
             $orders = $query->paginate($paginate, ['*'], 'page', 1);
             $page = 1;
         }
+        $start_record = ($page - 1) * $paginate + 1;
+        $end_record = ($page * $paginate >= count($orders) ) ? count($orders) : $page * $paginate;
 
         $pagination_params = [
             "display_items" => $display_items,
         ];
 
-        return view('admin/orders/index', compact('orders', 'display_items', 'pagination_params'));
+        return view('admin/orders/index', compact('orders', 'start_record', 'end_record', 'total_count',
+                                                  'display_items', 'pagination_params'));
     }
     
     function CreateOrder()
