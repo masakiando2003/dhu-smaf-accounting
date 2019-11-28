@@ -23,14 +23,14 @@ class Cashier extends Model
     // created_at, updated_at は DB の機能で自動更新する.
     public $timestamps = false;
 
-    public function GetExpenses(string $description="")
+    public function GetExpenses(string $description=NULL)
     {
         $expense = 0;
         
         $expenses = Casher::where('cashier_type', 2);
         if($expenses->count() > 0)
         {
-            if($description != "")
+            if($description != "" && $description != NULL)
             {
                 $expenses->where('description', 'LIKE', '%'. $description. '%');
             }

@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\DB;
 
 use App\Model\Cashier;
 
+use Carbon\Carbon;
+
 class CashierController extends Controller
 {
     function index()
