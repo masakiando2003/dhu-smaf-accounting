@@ -33,7 +33,7 @@ class ReportController extends Controller
         $profit = 0;
         $income = 0;
         $expenditure = 0;
-        $expenses = Cashier::get();
+        $expenses = Cashier::where('cashier_type', 'payment')->get();
         return view('admin/report/index', 
                     compact('company_info', 'company_members', 'orders', 
                             'items', 'sell_dates', 'time_periods', 

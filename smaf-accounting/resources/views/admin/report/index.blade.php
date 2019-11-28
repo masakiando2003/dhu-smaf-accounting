@@ -262,6 +262,12 @@
             <div class="col-sm-6">
                 <table class="table table-bordered dataTable">
                     <tr><th colspan=2 class="text-center">費用</th></tr>
+                    @foreach($expenses as $expense_item)
+                      <tr><th>{{ $expense_item->description }}</th><td>{{ $expense_item->payment_amount }}</td></tr>
+                      @php
+                          $expenditure += $expense_item->payment_amount
+                      @endphp
+                    @endforeach
                     <tr><th>合計:</th><td><strong>{{ $expenditure ?? 0 }}円</strong></td></tr>
                 </table>
             </div>
