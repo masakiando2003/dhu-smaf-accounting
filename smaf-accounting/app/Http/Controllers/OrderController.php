@@ -56,7 +56,8 @@ class OrderController extends Controller
         $page['content_header'] = "新規注文作成";
         $page['action'] = "/admin/orders/register";
         $page['submit'] = '作成';
-        return view('admin/orders/detail')->with('page', $page);
+        $items = Item::get();
+        return view('admin/orders/detail', compact('page', 'items'));
     }
 
     function ShowOrderDetail($id)
@@ -75,7 +76,8 @@ class OrderController extends Controller
         }
         $orderDetail->order_total = $order_total;
         $orderDetail->change = $orderDetail->paid - $order_total;
-        return view('admin/orders/detail', compact('page', 'orderDetail', 'orderItemDetail'));
+        $items = Item::get();
+        return view('admin/orders/detail', compact('page', 'orderDetail', 'orderItemDetail', 'items'));
     }
 
     function GetOrderValidationErrorMessage() {
@@ -168,7 +170,14 @@ class OrderController extends Controller
         }
 
         $msg="新規注文ID: \"$order_id\"を作成しました";
-        return redirect('/admin/orders')->with('success_msg', $msg);
+        if($request->multiple_create_flag == 1)
+        {
+            return redirect('/admin/orders/create')->with('success_msg', $msg);
+        } 
+        else 
+        {
+            return redirect('/admin/orders')->with('success_msg', $msg);
+        }
     }
 
     function EditOrder(Request $request)

@@ -17,6 +17,11 @@
                 @endforeach
             </div>
         @endif
+        @if(session('success_msg'))
+        <div class="alert alert-success">
+            {{ session('success_msg') }}
+        </div>
+        @endif
 
         <div class="box-body">
             <form action="{{ $page['action'] }}" id="orders" name="orders"
@@ -97,7 +102,12 @@
                         <tr id="order_item_row_{{ $count }}">
                             <td>
                                 <input type="hidden" name="item_id_{{ $count }}" id="item_id_{{ $count }}" value="{{ $orderItem->item_id }}" />
-                                <input type="text" class="form-control item_search" name="item_name_{{ $count }}" id="item_name_{{ $count }}" value="{{ $orderItem->GetItemName($orderItem->item_id) ?? '' }}" placeholder='少なくとも一つ文字を入力してください' onchange="AutoFillQuantity('{{ $count }}');GetItemIdAndPrice('{{ $count }}');" />
+                                <!--<input type="text" class="form-control item_search" name="item_name_{{ $count }}" id="item_name_{{ $count }}" value="{{ $orderItem->GetItemName($orderItem->item_id) ?? '' }}" placeholder='少なくとも一つ文字を入力してください' onchange="AutoFillQuantity('{{ $count }}');GetItemIdAndPrice('{{ $count }}');" />-->
+                                <select class="form-control" name="item_name_{{ $count }}" id="item_name_{{ $count }}" onchange="AutoFillQuantity('{{ $count }}');GetItemIdAndPrice('{{ $count }}');PaidFocus();">
+                                @foreach($items as $item)
+                                    <option value="{{ $item->name }}">{{ $item->name }}</option>
+                                @endforeach
+                                </select>
                             </td>
                             <td><input type="text" class="form-control" name="price_{{ $count }}" id="price_{{ $count }}" value="{{ $orderItem->price ?? '' }}" onchange="OrderItemValidation(this.id);CalculateOrderTotal()" placeholder="数字" /></td>
                             <td><input type="text" class="form-control" name="quantity_{{ $count }}" id="quantity_{{ $count }}" value="{{ $orderItem->quantity ?? '' }}" onchange="OrderItemValidation(this.id);CalculateOrderTotal()" placeholder="数字" /></td>
@@ -113,7 +123,13 @@
                     <tr id="order_item_row_1">
                         <td>
                             <input type="hidden" name="item_id_1" id="item_id_1" />
-                            <input type="text" class="form-control item_search" name="item_name_1" id="item_name_1" placeholder='少なくとも一つ文字を入力してください' onchange="AutoFillQuantity('1');GetItemIdAndPrice('1');" />
+                            <!--<input type="text" class="form-control item_search" name="item_name_1" id="item_name_1" placeholder='少なくとも一つ文字を入力してください' onchange="AutoFillQuantity('1');GetItemIdAndPrice('1');" />-->
+                            <select class="form-control" name="item_name_1" id="item_name_1" onchange="AutoFillQuantity('1');GetItemIdAndPrice('1');PaidFocus();">
+                            <option value="">選択してください</option>
+                            @foreach($items as $item)
+                                <option value="{{ $item->name }}">{{ $item->name }}</option>
+                            @endforeach
+                            </select>
                         </td>
                         <td><input type="text" class="form-control" name="price_1" id="price_1" onchange="OrderItemValidation(this.id);CalculateOrderTotal()" placeholder="数字" /></td>
                         <td><input type="text" class="form-control" name="quantity_1" id="quantity_1" onchange="OrderItemValidation(this.id);CalculateOrderTotal()" placeholder="数字" /></td>
@@ -138,7 +154,7 @@
                 <div class="col-sm-2">支払金額</div>
                 <div class="col-sm-4">
                     <input type="text" name="paid" id="paid" 
-                       class="form-control" placeholder="支払金額" onchange="CalculateChange()"
+                       class="form-control" placeholder="支払金額" onchange="CalculateChange();MultipleCreateFocus();"
                        value="@if(isset($orderDetail->paid)){{ $orderDetail->paid ?? '' }}@else{{old('paid') ?? ''}}@endif" />
                 </div>
             </div>
@@ -172,6 +188,13 @@
             <div class="row">
                 <div class="col-sm-2">&nbsp;</div>
                 <div class="col-sm-4">
+                    <input type="hidden" name="multiple_create_flag" id="multiple_create_flag" value="0"/>
+                    @empty($orderDetail->id)
+                    <input type="submit" class="btn btn-primary" 
+                           name="btnSubmitAndCreate" id="btnSubmitAndCreate" 
+                           value="連続作成"
+                           onclick="MultipleCreate();return CheckInput()"/>
+                    @endif
                     <input type="submit" class="btn btn-primary" 
                            name="btnSubmit" id="btnSubmit" value="{{ $page['submit'] }}"
                            onclick="return CheckInput()"/>
@@ -251,6 +274,23 @@
         },
         minLength: 0
     });
+
+    function PaidFocus()
+    {
+        document.getElementById('paid').focus();
+    }
+
+    function MultipleCreate(){
+        document.getElementById('multiple_create_flag').value = 1;
+    }
+
+    function MultipleCreateFocus()
+    {
+        if(document.getElementById('btnSubmitAndCreate') != null)
+        {
+            document.getElementById('btnSubmitAndCreate').focus();
+        }
+    }
 
     function GetItemIdAndPrice(index){
         const item_name = document.getElementById('item_name_'+index).value;
