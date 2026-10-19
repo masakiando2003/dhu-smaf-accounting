@@ -31,11 +31,12 @@ class CashierService
      * 出納記録を取得する
      *
      * @param  int  $id  出納記録ID
-     * @return \App\Model\Cashier|null
+     * @return \App\Model\Cashier
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException  出納記録が存在しない（削除済みを含む）場合
      */
     public function find($id)
     {
-        return Cashier::find($id);
+        return Cashier::findOrFail($id);
     }
 
     /**
@@ -94,12 +95,13 @@ class CashierService
      *
      * @param  int  $id  出納記録ID
      * @return void
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException  出納記録が存在しない（削除済みを含む）場合
      */
     public function delete($id)
     {
         DB::beginTransaction();
         try {
-            $cashier = Cashier::find($id);
+            $cashier = Cashier::findOrFail($id);
             $cashier->delete();
             $cashier->save();
             DB::commit();

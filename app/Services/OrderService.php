@@ -40,10 +40,11 @@ class OrderService
      *
      * @param  int  $id  注文ID
      * @return array{order: \App\Model\Order, order_items: \Illuminate\Database\Eloquent\Collection}
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException  注文が存在しない（削除済みを含む）場合
      */
     public function getOrderDetail($id)
     {
-        $orderDetail = Order::find($id);
+        $orderDetail = Order::findOrFail($id);
         $orderItemDetail = OrderItem::where('order_id', $id)->get();
         $order_total = 0;
         foreach($orderItemDetail as $orderItem){
@@ -231,12 +232,13 @@ class OrderService
      *
      * @param  int  $order_id  注文ID
      * @return void
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException  注文が存在しない（削除済みを含む）場合
      */
     public function delete($order_id)
     {
         DB::beginTransaction();
         try {
-            $order = Order::find($order_id);
+            $order = Order::findOrFail($order_id);
             $order->delete();
 
             // 在庫数更新

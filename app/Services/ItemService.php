@@ -39,11 +39,12 @@ class ItemService
      * アイテムを取得する
      *
      * @param  int  $id  アイテムID
-     * @return \App\Model\Item|null
+     * @return \App\Model\Item
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException  アイテムが存在しない（削除済みを含む）場合
      */
     public function find($id)
     {
-        return Item::find($id);
+        return Item::findOrFail($id);
     }
 
     /**
@@ -131,12 +132,13 @@ class ItemService
      *
      * @param  int  $id  アイテムID
      * @return void
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException  アイテムが存在しない（削除済みを含む）場合
      */
     public function delete($id)
     {
         DB::beginTransaction();
         try {
-            $item = Item::find($id);
+            $item = Item::findOrFail($id);
             $item->delete();
             $item->save();
             DB::commit();
