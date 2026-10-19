@@ -132,6 +132,42 @@ class OrderTest extends TestCase
         $this->assertSame([(string) $this->cottonCandy->id, (string) $this->potato->id], $matches[1]);
     }
 
+    public function testDetailPageShowsOrderIdAndOrderTimeLabel()
+    {
+        $order = factory(Order::class)->create(['order_at' => '2019-11-30 10:15:00']);
+
+        $this->get('/admin/orders/detail/'.$order->id)
+             ->assertOk()
+             ->assertSeeInOrder(['注文ID', (string) $order->id, '注文時間', '自動採番', '入力', '2019/11/30 10:15:00']);
+    }
+
+    public function testCreatePageShowsOrderTimeLabelWithoutOrderId()
+    {
+        $this->get('/admin/orders/create')
+             ->assertOk()
+             ->assertSeeInOrder(['注文時間', '自動採番'])
+             ->assertDontSee('注文ID');
+    }
+
+    public function testManualOrderTimeIsReflectedInReportTimePeriod()
+    {
+        $this->post('/admin/orders/register', $this->orderInput([[$this->cottonCandy, 300, 1]]));
+        $order = Order::first();
+
+        // 注文詳細で、注文時間を学園祭の 9:59:11 に手入力して更新する
+        $this->post('/admin/orders/edit', $this->orderInput([[$this->cottonCandy, 300, 1]], [
+            'order_id'            => (string) $order->id,
+            'transactionTimeType' => 'manual',
+            'transactionDate'     => '2019/11/30',
+            'transactionTime'     => '09:59:11',
+        ]))->assertRedirect('/admin/orders');
+
+        $text = preg_replace('/\s+/u', ' ', strip_tags($this->get('/admin/report')->assertOk()->getContent()));
+
+        // 2019-11-30 の時間帯別の表で、9:00 - 9:59 の綿菓子（1列目）が 1個になる
+        $this->assertRegExp('/2019-11-30 .*?9:00 - 9:59 1個 0個/u', $text);
+    }
+
     public function testOrderPagesDoNotUseAutocomplete()
     {
         $this->get('/admin/orders/create')

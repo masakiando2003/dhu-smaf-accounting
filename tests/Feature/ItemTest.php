@@ -221,25 +221,4 @@ class ItemTest extends TestCase
              ->assertOk()
              ->assertSee('0 件表示 / 0件');
     }
-
-    public function testAutocompleteSearchesByPartialName()
-    {
-        factory(Item::class)->create(['name' => '綿菓子']);
-        factory(Item::class)->create(['name' => 'ポテト']);
-
-        $this->getJson('/item_autocomplete?term='.urlencode('菓'))
-             ->assertOk()
-             ->assertJsonCount(1)
-             ->assertJsonFragment(['name' => '綿菓子']);
-    }
-
-    public function testGetPriceReturnsItemWithExactName()
-    {
-        factory(Item::class)->create(['name' => '綿菓子', 'price' => 300]);
-
-        $this->getJson('/item_getprice?itemName='.urlencode('綿菓子'))
-             ->assertOk()
-             ->assertJsonCount(1)
-             ->assertJsonFragment(['name' => '綿菓子', 'price' => 300]);
-    }
 }

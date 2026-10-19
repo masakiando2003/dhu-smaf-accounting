@@ -72,28 +72,6 @@ class ItemService
     }
 
     /**
-     * 名称の部分一致でアイテムを検索する
-     *
-     * @param  string|null  $search  検索文字列
-     * @return \Illuminate\Database\Eloquent\Collection|\App\Model\Item[]
-     */
-    public function searchByName($search)
-    {
-        return Item::where('name', 'LIKE', '%'. $search. '%')->get();
-    }
-
-    /**
-     * 名称が完全一致するアイテムを取得する
-     *
-     * @param  string|null  $name  アイテム名称
-     * @return \Illuminate\Database\Eloquent\Collection|\App\Model\Item[]
-     */
-    public function findByExactName($name)
-    {
-        return Item::where('name', $name)->get();
-    }
-
-    /**
      * アイテムを新規登録する
      *
      * @param  array  $data  name, description, price, size, weight, weight_unit, init_stock, stock, remarks

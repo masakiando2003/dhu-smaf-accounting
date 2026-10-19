@@ -33,7 +33,18 @@
                        value="{{ $orderDetail->id ?? '' }}" />
             @endisset
 
+            @isset($orderDetail->id)
             <div class="row">
+                <div class="col-sm-2">注文ID</div>
+                <div class="col-sm-4" id="order_id_label">{{ $orderDetail->id }}</div>
+            </div>
+
+            <!--スペースをあげる-->
+            <div class="row">&nbsp;</div>
+            @endisset
+
+            <div class="row">
+                <div class="col-sm-2">注文時間</div>
                 <div class="col-sm-2">
                     <input type="radio" name="transactionTimeType" id="transaction_auto" value="auto" checked
                     onclick="ChangeTransactionType()" />自動採番
