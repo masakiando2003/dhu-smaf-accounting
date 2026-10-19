@@ -58,6 +58,9 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
+            // アプリのタイムゾーン（config/app.php の Asia/Tokyo）に合わせる.
+            // MySQL にタイムゾーン表がない環境でも動くように、名前ではなく時差で指定する.
+            'timezone' => env('DB_TIMEZONE', '+09:00'),
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
