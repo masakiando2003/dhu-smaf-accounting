@@ -12,12 +12,13 @@ use Carbon\Carbon;
 use CompanyInfoTableSeeder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use PDOException;
+use Tests\Concerns\SimulatesDatabaseError;
 use Tests\TestCase;
 
 class OrderServiceTest extends TestCase
 {
     use RefreshDatabase;
+    use SimulatesDatabaseError;
 
     /** @var \App\Services\OrderService */
     private $service;
@@ -277,16 +278,11 @@ class OrderServiceTest extends TestCase
             $this->orderItem($this->cottonCandy, 300, 2),
         ]);
         // 在庫を戻し、明細と出納記録を論理削除した後の、最後の保存で DB エラーが起きたことにする
-        Order::saving(function () {
-            throw new PDOException('テスト用の DB エラー');
-        });
+        $this->failOnSaving(Order::class);
 
-        try {
+        $this->assertThrowsSimulatedDatabaseError(function () use ($order) {
             $this->service->delete($order->id);
-            $this->fail('例外が投げられませんでした');
-        } catch (PDOException $e) {
-            $this->assertSame('テスト用の DB エラー', $e->getMessage());
-        }
+        });
 
         // すべての変更が元に戻っている
         $this->assertDatabaseHas('orders', ['id' => $order->id, 'deleted_at' => null]);
