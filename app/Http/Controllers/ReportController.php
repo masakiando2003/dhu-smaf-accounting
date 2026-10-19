@@ -2,16 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-
 use App\Model\CompanyInfo;
 use App\Model\CompanyMembers;
 use App\Model\Order;
 use App\Model\Item;
 use App\Model\Cashier;
 
+/**
+ * レポート（販売実績・損益計算書・貸借対照表など）を扱うコントローラー
+ */
 class ReportController extends Controller
 {
+    /**
+     * レポートを表示する
+     *
+     * @return \Illuminate\View\View
+     */
     function index()
     {
         $company_info = CompanyInfo::get()->first();

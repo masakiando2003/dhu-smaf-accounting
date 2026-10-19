@@ -7,6 +7,18 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 use App\Model\Item;
 
+/**
+ * 注文明細
+ *
+ * @property int $id
+ * @property int $order_id 注文ID
+ * @property int $item_id アイテムID
+ * @property int $price 注文時の単価
+ * @property int $quantity 数量
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ */
 class OrderItem extends Model
 {
     use SoftDeletes;
@@ -25,6 +37,12 @@ class OrderItem extends Model
     public $timestamps = false;
 
     
+    /**
+     * アイテム名称を取得する
+     *
+     * @param  int  $item_id  アイテムID
+     * @return string
+     */
     public function GetItemName(int $item_id){
         $item_detail = Item::where('id', $item_id)->get()->first();
         return $item_detail->name;

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
@@ -11,8 +10,16 @@ use App\Model\Cashier;
 
 use Carbon\Carbon;
 
+/**
+ * 現金出納帳の一覧・作成・編集・削除を扱うコントローラー
+ */
 class CashierController extends Controller
 {
+    /**
+     * 現金出納帳の一覧を表示する
+     *
+     * @return \Illuminate\View\View
+     */
     function index()
     {
         if(isset($request->display_items)){
@@ -45,6 +52,11 @@ class CashierController extends Controller
                                                'display_items', 'pagination_params'));
     }
     
+    /**
+     * 出納記録の新規作成画面を表示する
+     *
+     * @return \Illuminate\View\View
+     */
     function CreateCashier()
     {
         $page = array();
@@ -56,6 +68,12 @@ class CashierController extends Controller
         return view('admin/cashier/detail', compact('page', 'transactionTimeType'));
     }
 
+    /**
+     * 出納記録の編集画面を表示する
+     *
+     * @param  int  $id  出納記録ID
+     * @return \Illuminate\View\View
+     */
     function ShowCashierDetail($id)
     {
         $page = array();
@@ -71,6 +89,11 @@ class CashierController extends Controller
         return view('admin/cashier/detail', compact('page', 'cashierDetail'));
     }
 
+    /**
+     * 出納記録の入力チェックのエラーメッセージを返す
+     *
+     * @return array<string, string>
+     */
     function GetCashierValidationErrorMessage() {
         return [
             "income_amount.regex"                   => "収入金額に数字以外が試用されています",
@@ -78,6 +101,12 @@ class CashierController extends Controller
         ];
     }
   
+    /**
+     * 出納記録の入力チェック用のバリデーターを作成する
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Contracts\Validation\Validator
+     */
     function GetCashierValidator(Request $request) {
         return Validator::make($request->all(), [
                     'income_amount'         => 'required|regex:/^[0-9]+$/',
@@ -85,6 +114,14 @@ class CashierController extends Controller
                 ], $this->GetCashierValidationErrorMessage());
     }
       
+    /**
+     * 出納記録を新規登録する
+     *
+     * transactionTimeType が "manual" のときは入力された日時、それ以外は現在日時で登録する.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     function RegisterCashier(Request $request)
     {
         $validator = $this->GetCashierValidator($request);
@@ -117,6 +154,12 @@ class CashierController extends Controller
         return redirect('/admin/cashier')->with('success_msg', $msg);
     }
 
+    /**
+     * 出納記録を更新する
+     *
+     * @param  \Illuminate\Http\Request  $request  cashier_id（更新する出納記録ID）ほか
+     * @return \Illuminate\Http\RedirectResponse
+     */
     function EditCashier(Request $request)
     {
         $cashier_id = $request->cashier_id;
@@ -156,6 +199,12 @@ class CashierController extends Controller
         return redirect('/admin/cashier')->with('success_msg', $msg);
     }
 
+    /**
+     * 出納記録を削除（論理削除）する
+     *
+     * @param  \Illuminate\Http\Request  $request  del_id（削除する出納記録ID）
+     * @return \Illuminate\Http\RedirectResponse
+     */
     function DeleteCashier(Request $request)
     {
         $cashier_id = $request->del_id;

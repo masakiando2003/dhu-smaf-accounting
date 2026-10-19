@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
@@ -15,8 +14,19 @@ use App\Model\CompanyInfo;
 
 use Carbon\Carbon;
 
+/**
+ * 注文の一覧・作成・編集・削除を扱うコントローラー
+ *
+ * 注文の登録・更新・削除にあわせて、在庫数・現金出納帳・会社の現金も更新する.
+ */
 class OrderController extends Controller
 {
+    /**
+     * 注文一覧を表示する
+     *
+     * @param  \Illuminate\Http\Request  $request  display_items（1ページの表示件数）、page（ページ番号）
+     * @return \Illuminate\View\View
+     */
     function index(Request $request)
     {
         if(isset($request->display_items)){
@@ -49,6 +59,11 @@ class OrderController extends Controller
                                                   'display_items', 'pagination_params'));
     }
     
+    /**
+     * 注文の新規作成画面を表示する
+     *
+     * @return \Illuminate\View\View
+     */
     function CreateOrder()
     {
         $page = array();
@@ -60,6 +75,12 @@ class OrderController extends Controller
         return view('admin/orders/detail', compact('page', 'items'));
     }
 
+    /**
+     * 注文の詳細（編集）画面を表示する
+     *
+     * @param  int  $id  注文ID
+     * @return \Illuminate\View\View
+     */
     function ShowOrderDetail($id)
     {
         $page = array();
@@ -80,6 +101,11 @@ class OrderController extends Controller
         return view('admin/orders/detail', compact('page', 'orderDetail', 'orderItemDetail', 'items'));
     }
 
+    /**
+     * 注文の入力チェックのエラーメッセージを返す
+     *
+     * @return array<string, string>
+     */
     function GetOrderValidationErrorMessage() {
         return [
             "num_of_people.required"       => "人数が指定されていません",
@@ -89,6 +115,12 @@ class OrderController extends Controller
         ];
       }
   
+      /**
+       * 注文の入力チェック用のバリデーターを作成する
+       *
+       * @param  \Illuminate\Http\Request  $request
+       * @return \Illuminate\Contracts\Validation\Validator
+       */
       function GetOrderValidator(Request $request) {
         return Validator::make($request->all(), [
                     'num_of_people'         => 'required|regex:/^[0-9]+$/',
@@ -96,6 +128,15 @@ class OrderController extends Controller
                 ], $this->GetOrderValidationErrorMessage());
       }
 
+    /**
+     * 注文を新規登録する
+     *
+     * 注文明細の登録、在庫数の減算、「収入」の出納記録の作成、会社の現金の加算もあわせて行う.
+     * 注文明細は item_id_N / price_N / quantity_N（N は 1〜order_item_count）で受け取る.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     function RegisterOrder(Request $request)
     {
         $validator = $this->GetOrderValidator($request);
@@ -180,6 +221,15 @@ class OrderController extends Controller
         }
     }
 
+    /**
+     * 注文を更新する
+     *
+     * 注文明細の追加・変更・削除にあわせて在庫数を戻してから再計算し、
+     * 出納記録と会社の現金も更新する.
+     *
+     * @param  \Illuminate\Http\Request  $request  order_id（更新する注文ID）ほか
+     * @return \Illuminate\Http\RedirectResponse
+     */
     function EditOrder(Request $request)
     {
         if($request->order_id == null){
@@ -290,6 +340,14 @@ class OrderController extends Controller
         return redirect('/admin/orders')->with('success_msg', $msg);
     }
 
+    /**
+     * 注文を削除（論理削除）する
+     *
+     * 注文明細と出納記録も論理削除し、在庫数を戻す.
+     *
+     * @param  \Illuminate\Http\Request  $request  del_id（削除する注文ID）
+     * @return \Illuminate\Http\RedirectResponse
+     */
     function DeleteOrder(Request $request)
     {
         $order_id = $request->del_id;

@@ -4,6 +4,21 @@ namespace App\Model;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * 会社のメンバー
+ *
+ * @property int $id
+ * @property string $name 氏名
+ * @property string|null $email メールアドレス
+ * @property int $role 役割
+ * @property string|null $position 役職
+ * @property int $capital 出資額
+ * @property int $num_of_share 株数
+ * @property int $share_percentage 持株比率
+ * @property int $status 状態
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 class CompanyMembers extends Model
 {
     protected $table        = 'company_members';
