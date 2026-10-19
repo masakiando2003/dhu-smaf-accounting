@@ -281,6 +281,23 @@ class OrderTest extends TestCase
              ->assertRedirect('/admin/orders');
     }
 
+    public function testDeleteRedirectsBackToSamePage()
+    {
+        $order = factory(Order::class)->create();
+
+        $this->delete('/admin/orders/delete/', ['del_id' => $order->id, 'display_items' => '5', 'page' => '2'])
+             ->assertRedirect('/admin/orders?display_items=5&page=2');
+    }
+
+    public function testIndexShowsRecordRangeOnSecondPage()
+    {
+        factory(Order::class, 12)->create();
+
+        $this->get('/admin/orders?display_items=5&page=2')
+             ->assertOk()
+             ->assertSee('6 - 10 件表示 / 12件');
+    }
+
     public function testDeleteSoftDeletesOrderAndRestoresStock()
     {
         $this->post('/admin/orders/register', $this->orderInput([[$this->cottonCandy, 300, 2]]));

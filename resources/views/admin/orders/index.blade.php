@@ -63,10 +63,10 @@
     </table>
     <div class="row">
       <div class="col-sm-9 text-left">
-          @if($start_record < $end_record)
+          @if($total_count > 0)
               {{ $start_record }} - {{ $end_record }} 件表示 / {{ $total_count }}件
           @else
-              {{ $end_record }} 件表示 / {{ $total_count }}件
+              0 件表示 / 0件
           @endif
       </div>
       <div class="col-sm-3 text-right">

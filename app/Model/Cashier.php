@@ -38,30 +38,4 @@ class Cashier extends Model
 
     // created_at, updated_at は DB の機能で自動更新する.
     public $timestamps = false;
-
-    /**
-     * 経費の合計金額を取得する
-     *
-     * ※ 現状はクラス名の誤り（Casher）があり、呼び出すとエラーになる. どこからも使われていない.
-     *
-     * @param  string|null  $description  摘要の部分一致で絞り込む文字列
-     * @return int
-     */
-    public function GetExpenses(string $description=NULL)
-    {
-        $expense = 0;
-        
-        $expenses = Casher::where('cashier_type', 2);
-        if($expenses->count() > 0)
-        {
-            if($description != "" && $description != NULL)
-            {
-                $expenses->where('description', 'LIKE', '%'. $description. '%');
-            }
-            $expense_info = $expenses->get();
-            $expense += $expense_info->payment_amount;
-        }
-
-        return $expense;
-    }
 }

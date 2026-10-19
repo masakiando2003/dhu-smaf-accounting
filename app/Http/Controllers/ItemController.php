@@ -39,20 +39,12 @@ class ItemController extends Controller
         else {
             $paginate = 10;
         }
-        if(isset($request->page)){
-            $page = $request->page;
-        } else {
-            $page = 1;
-        }
         $display_items = $paginate;
         $result = $this->itemService->paginate($paginate);
         $items = $result['records'];
         $total_count = $result['total_count'];
-        if($result['is_first_page_fallback']){
-            $page = 1;
-        }
-        $start_record = ($page - 1) * $paginate + 1;
-        $end_record = ($page * $paginate >= count($items) ) ? count($items) : $page * $paginate;
+        $start_record = $items->firstItem() ?? 0;
+        $end_record = $items->lastItem() ?? 0;
 
         $pagination_params = [
             "display_items" => $display_items,
@@ -138,7 +130,7 @@ class ItemController extends Controller
         $item_name = $request->name;
         $ori_item_name = $request->ori_name;
         if($item_name != $ori_item_name){
-            if($this->CheckEventIsNotExist($item_name) == "false"){
+            if($this->itemService->existsByName($item_name)){
                 $err_msg = "入力したアイテム名称\"$item_name\"は既にデータベース存在します。";
                 return redirect()
                        ->back()
@@ -172,7 +164,7 @@ class ItemController extends Controller
                 "display_items" => $display_items,
                 "page" => $page,
             ];
-            return redirect('/admin/items?display_items'.$display_items.'&page='.$page)
+            return redirect('/admin/items?display_items='.$display_items.'&page='.$page)
                    ->with([
                             'success_msg' => $msg,
                             'pagination_params' => $pagination_params
