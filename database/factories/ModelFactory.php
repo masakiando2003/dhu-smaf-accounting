@@ -26,6 +26,7 @@ $factory->define(Item::class, function (Faker $faker) {
 $factory->define(Order::class, function (Faker $faker) {
     return [
         'num_of_people' => $faker->numberBetween(1, 5),
+        'order_at'      => now(),
         'paid'          => 1000,
         'change'        => 0,
         'remarks'       => null,

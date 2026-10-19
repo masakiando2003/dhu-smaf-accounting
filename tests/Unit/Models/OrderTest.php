@@ -70,12 +70,12 @@ class OrderTest extends TestCase
      * 注文を登録する
      *
      * @param  array   $items       [[アイテム, 単価, 数量], ...]
-     * @param  string  $created_at  注文日時
+     * @param  string  $order_at  注文日時
      * @return \App\Model\Order
      */
-    private function registerOrder(array $items, string $created_at)
+    private function registerOrder(array $items, string $order_at)
     {
-        return $this->orderService->register($this->orderData(), $this->orderItems($items), $created_at);
+        return $this->orderService->register($this->orderData(), $this->orderItems($items), $order_at);
     }
 
     public function testSellAmountByDateMultipliesPriceByQuantity()
@@ -111,5 +111,38 @@ class OrderTest extends TestCase
         $this->assertSame(0, $this->orders->GetOrderItemsCountByDate('2019-11-30', $this->potato->id));
         $this->assertSame(1, $this->orders->GetOrderItemsTotalCount(['2019-11-30']));
         $this->assertSame(0, $this->orders->GetOrdersCountByItemAndTimePeriod($this->potato->id, '2019-11-30', '10:00 - 10:59'));
+    }
+
+    public function testTimePeriodIncludesSecondsOfLastMinute()
+    {
+        $this->registerOrder([[$this->cottonCandy, 300, 1]], '2019-11-30 09:00:00');
+        $this->registerOrder([[$this->cottonCandy, 300, 1]], '2019-11-30 09:59:30');
+        // 次の時間帯の始まりは含めない
+        $this->registerOrder([[$this->cottonCandy, 300, 1]], '2019-11-30 10:00:00');
+
+        $this->assertSame(2, $this->orders->GetOrdersCountByItemAndTimePeriod($this->cottonCandy->id, '2019-11-30', '9:00 - 9:59'));
+        $this->assertSame(1, $this->orders->GetOrdersCountByItemAndTimePeriod($this->cottonCandy->id, '2019-11-30', '10:00 - 10:59'));
+    }
+
+    public function testDayIncludesLastSecondAndExcludesNextDay()
+    {
+        $this->registerOrder([[$this->cottonCandy, 300, 1]], '2019-11-30 23:59:59');
+        $this->registerOrder([[$this->cottonCandy, 300, 2]], '2019-12-01 00:00:00');
+
+        $this->assertSame(1, $this->orders->GetOrdersCountByDate('2019-11-30'));
+        $this->assertSame(300, $this->orders->GetOrderItemsSellAmountByDate('2019-11-30'));
+        $this->assertSame(600, $this->orders->GetOrderItemsSellAmountByDate('2019-12-01'));
+        $this->assertSame(900, $this->orders->GetOrderItemsTotalSellAmount(['2019-11-30', '2019-12-01']));
+    }
+
+    public function testReportUsesOrderAtInsteadOfCreatedAt()
+    {
+        // 学園祭の後に、当日の注文を入力した場合
+        $order = $this->registerOrder([[$this->cottonCandy, 300, 1]], '2019-11-30 10:15:00');
+        $order->created_at = '2019-12-05 20:00:00';
+        $order->save();
+
+        $this->assertSame(1, $this->orders->GetOrdersCountByDate('2019-11-30'));
+        $this->assertSame(300, $this->orders->GetOrderItemsSellAmountByDate('2019-11-30'));
     }
 }

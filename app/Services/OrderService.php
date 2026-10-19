@@ -76,20 +76,22 @@ class OrderService
      * 注文を新規登録する
      *
      * 注文明細の登録、在庫数の減算、「収入」の出納記録の作成、会社の現金の加算もあわせて行う.
+     * 出納記録の取引日時は、注文日時と同じにする.
      *
      * @param  array        $data         num_of_people, paid, change, remarks
      * @param  array        $order_items  注文明細（\App\Http\Requests\OrderRequest::orderItems() の形）
-     * @param  string|null  $created_at   注文日時（Y-m-d H:i:s）. null のときは現在日時
+     * @param  string|null  $order_at     注文日時（Y-m-d H:i:s）. null のときは現在日時
      * @return \App\Model\Order
      */
-    public function register(array $data, array $order_items, $created_at = null)
+    public function register(array $data, array $order_items, $order_at = null)
     {
         $new_order = new Order();
         $new_order->num_of_people = $data['num_of_people'];
         $new_order->paid = $data['paid'];
         $new_order->change = $data['change'];
         $new_order->remarks = $data['remarks'];
-        $new_order->created_at = $created_at ?? Carbon::now();
+        $new_order->order_at = $order_at ?? Carbon::now();
+        $new_order->created_at = Carbon::now();
         $new_order->save();
         $order_id = $new_order->id;
 
@@ -121,7 +123,7 @@ class OrderService
         if($data['paid'] > 0){
             // 直接出納記録を作成する
             $new_cashier = new Cashier();
-            $new_cashier->transaction_time = date('Y-m-d H:i:s');
+            $new_cashier->transaction_time = $new_order->order_at->format('Y-m-d H:i:s');
             $new_cashier->cashier_type = 'income';
             $new_cashier->order_id = $order_id;
             $new_cashier->description = '注文ID: '.$order_id.'に支払する';
@@ -143,15 +145,15 @@ class OrderService
      * 注文を更新する
      *
      * 注文明細の追加・変更・削除にあわせて在庫数を戻してから再計算し、
-     * 出納記録と会社の現金も更新する.
+     * 出納記録と会社の現金も更新する. 注文日時を変えた場合は、出納記録の取引日時も同じにする.
      *
      * @param  int          $order_id     注文ID
      * @param  array        $data         num_of_people, paid, change, remarks
      * @param  array        $order_items  注文明細（\App\Http\Requests\OrderRequest::orderItems() の形）
-     * @param  string|null  $created_at   注文日時（Y-m-d H:i:s）. null のときは変更しない
+     * @param  string|null  $order_at     注文日時（Y-m-d H:i:s）. null のときは変更しない
      * @return void
      */
-    public function update($order_id, array $data, array $order_items, $created_at = null)
+    public function update($order_id, array $data, array $order_items, $order_at = null)
     {
         // 更新.
         Order::where('id', $order_id)
@@ -218,11 +220,15 @@ class OrderService
                 'change' => $change
         ]);
 
-        if($created_at !== null){
+        if($order_at !== null){
             Order::where('id', $order_id)
              ->update([
-                'created_at' => $created_at
+                'order_at' => $order_at
              ]);
+            Cashier::where('order_id', $order_id)
+                   ->update([
+                      'transaction_time' => $order_at
+                   ]);
         }
 
         Cashier::where('order_id', $order_id)

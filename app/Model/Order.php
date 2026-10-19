@@ -5,6 +5,7 @@ namespace App\Model;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 /**
  * 注文
@@ -14,7 +15,8 @@ use Illuminate\Support\Facades\DB;
  * @property int $paid 支払金額
  * @property int|null $change お釣り
  * @property string|null $remarks 備考
- * @property \Illuminate\Support\Carbon|null $created_at 注文日時
+ * @property \Illuminate\Support\Carbon $order_at 注文日時
+ * @property \Illuminate\Support\Carbon|null $created_at レコードを作成した日時
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  */
@@ -29,11 +31,40 @@ class Order extends Model
     protected $keyType      = 'bigint';
     public    $incrementing = true;
 
-    protected $dates = ['created_at', 'updated_at'];
-    protected $fillable = ['num_of_people', 'paid', 'change', 'remarks'];
+    protected $dates = ['order_at', 'created_at', 'updated_at'];
+    protected $fillable = ['num_of_people', 'paid', 'change', 'remarks', 'order_at'];
 
     // created_at, updated_at は DB の機能で自動更新する.
     public $timestamps = false;
+
+    /**
+     * 注文日時が指定した範囲（開始以上・終了未満）の注文に絞り込む
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  \DateTimeInterface|string  $start  開始日時（この日時を含む）
+     * @param  \DateTimeInterface|string  $end    終了日時（この日時を含まない）
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeOrderedBetween($query, $start, $end)
+    {
+        return $query->where('orders.order_at', '>=', $start)
+                     ->where('orders.order_at', '<', $end);
+    }
+
+    /**
+     * 開始日の 0時から、終了日の翌日 0時までの範囲を返す
+     *
+     * @param  string  $start_date  開始日（Y-m-d）
+     * @param  string  $end_date    終了日（Y-m-d）
+     * @return \Carbon\Carbon[]  [開始日時, 終了日時（含まない）]
+     */
+    private static function dayRange(string $start_date, string $end_date)
+    {
+        return [
+            Carbon::parse($start_date)->startOfDay(),
+            Carbon::parse($end_date)->startOfDay()->addDay(),
+        ];
+    }
 
     /**
      * 注文の合計金額（単価 × 数量 の合計）を取得する
@@ -62,16 +93,16 @@ class Order extends Model
     public function GetOrdersCountByItemAndTimePeriod(int $item_id, string $date, string $time_period)
     {
         $time_arr = explode(" - ", $time_period);
-        $start_time = $date." ".$time_arr[0];
-        $end_time = $date." ".$time_arr[1];
+        // 終わりの時刻（例: 9:59）は、その1分間（9:59:59 まで）を含める
+        $start_time = Carbon::parse($date." ".$time_arr[0]);
+        $end_time = Carbon::parse($date." ".$time_arr[1])->addMinute();
 
         $order_count = Order::join('order_items', function($join){
             $join->on('orders.id', '=', 'order_items.order_id');
             $join->whereNull('order_items.deleted_at');
         })
         ->where('order_items.item_id', $item_id)
-        ->where('orders.created_at', '>=', $start_time)
-        ->where('orders.created_at', '<=', $end_time)
+        ->orderedBetween($start_time, $end_time)
         ->count();
 
         return $order_count;
@@ -85,8 +116,7 @@ class Order extends Model
      */
     public function GetOrdersCountByDate(string $date)
     {
-        $order_count = Order::where('orders.created_at', '>=', $date." 00:00:00")
-                            ->where('orders.created_at', '<=', $date." 23:59:59")
+        $order_count = Order::orderedBetween(...self::dayRange($date, $date))
                             ->count();
 
         return $order_count;
@@ -106,8 +136,7 @@ class Order extends Model
             $join->whereNull('order_items.deleted_at');
                        })
                        ->where('order_items.item_id', $item_id)
-                       ->where('orders.created_at', '>=', $date." 00:00:00")
-                       ->where('orders.created_at', '<=', $date." 23:59:59")
+                       ->orderedBetween(...self::dayRange($date, $date))
                        ->count();
 
         return $orderitems_count;
@@ -127,8 +156,7 @@ class Order extends Model
                             $join->on('orders.id', '=', 'order_items.order_id');
             $join->whereNull('order_items.deleted_at');
                        })
-                       ->where('orders.created_at', '>=', $start_date." 00:00:00")
-                       ->where('orders.created_at', '<=', $end_date." 23:59:59")
+                       ->orderedBetween(...self::dayRange($start_date, $end_date))
                        ->count();
         return $orderitems_count;
     }
@@ -148,8 +176,7 @@ class Order extends Model
                         $join->on('orders.id', '=', 'order_items.order_id');
             $join->whereNull('order_items.deleted_at');
                        })
-                       ->where('orders.created_at', '>=', $date." 00:00:00")
-                       ->where('orders.created_at', '<=', $date." 23:59:59");
+                       ->orderedBetween(...self::dayRange($date, $date));
         if($item_id!=0){
             $order_query->where('order_items.item_id', $item_id);
         }
@@ -174,8 +201,7 @@ class Order extends Model
                         $join->on('orders.id', '=', 'order_items.order_id');
             $join->whereNull('order_items.deleted_at');
                        })
-                       ->where('orders.created_at', '>=', $start_date." 00:00:00")
-                       ->where('orders.created_at', '<=', $end_date." 23:59:59")
+                       ->orderedBetween(...self::dayRange($start_date, $end_date))
                        ->sum(DB::raw('order_items.price * order_items.quantity'));
         return (int) $order_total;
     }

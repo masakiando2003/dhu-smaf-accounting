@@ -51,7 +51,7 @@
       <td>{{ $order->GetOrderTotal($order->id) }}</td>
       <td>{{ $order->paid }}</td>
       <td>{{ $order->change }}</td>
-      <td>{{ $order->created_at->format('Y/m/d H:i:s') }}</td>
+      <td>{{ $order->order_at->format('Y/m/d H:i:s') }}</td>
       <td>
       <a href="/admin/orders/detail/{{ $order->id }}" class="btn btn-success">編集</a>
         <input type="submit" class="btn btn-danger" name="btnEdit" value="削除" onclick="return ConfirmDelete('{{ $order->id }}')" />

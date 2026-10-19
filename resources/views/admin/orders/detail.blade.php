@@ -43,19 +43,19 @@
                     onclick="ChangeTransactionType()" />入力
                 </div>
                 <div id="time_label" class="col-sm-4" @if(!isset($orderDetail->id)) style="display:none;" @endif>
-                    <div>@isset($orderDetail->created_at){{ $orderDetail->created_at->format('Y/m/d H:i:s') ?? '' }}@endisset</div>
+                    <div>@isset($orderDetail->order_at){{ $orderDetail->order_at->format('Y/m/d H:i:s') ?? '' }}@endisset</div>
                 </div>
                 <div id="time_input" class="col-sm-4" style="display:none;">
                     <div class="row">
                         <div class="col-sm-6">
                             <input type="text" name="transactionDate" id="transactionDate"
                             class="form-control datepicker" placeholder="年/月/日"
-                            value="@if(isset($orderDetail->created_at)){{ $orderDetail->created_at->format('Y/m/d') ?? '' }}@else{{old('transactionDate') ?? ''}}@endif" />
+                            value="@if(isset($orderDetail->order_at)){{ $orderDetail->order_at->format('Y/m/d') ?? '' }}@else{{old('transactionDate') ?? ''}}@endif" />
                         </div>
                         <div class="col-sm-6">
                             <input type="text" name="transactionTime" id="transactionTime"
                             class="form-control timepicker" placeholder="時間:分:秒"
-                            value="@if(isset($orderDetail->created_at)){{ $orderDetail->created_at->format('H:i:s') ?? '' }}@else{{old('transactionTime') ?? ''}}@endif" />
+                            value="@if(isset($orderDetail->order_at)){{ $orderDetail->order_at->format('H:i:s') ?? '' }}@else{{old('transactionTime') ?? ''}}@endif" />
                         </div>
                     </div>
                 </div>
