@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Model\Item;
 use App\Model\Order;
@@ -10,11 +9,22 @@ use App\Model\OrderItem;
 use App\Model\Cashier;
 use App\Model\CompanyInfo;
 
+/**
+ * 管理画面のトップ（ダッシュボード）を扱うコントローラー
+ */
 class AdminController extends Controller
 {
     // 在庫が初期在庫のこの割合以下になったら「在庫が少ない」とする
     const LOW_STOCK_RATIO = 0.2;
 
+    /**
+     * ダッシュボードを表示する
+     *
+     * 売上・注文数・現金残高・利益の集計、在庫が少ない商品、
+     * 売れ筋ランキング、最近の注文を表示する.
+     *
+     * @return \Illuminate\View\View
+     */
     function index()
     {
         $company_info = CompanyInfo::get()->first();
@@ -54,6 +64,11 @@ class AdminController extends Controller
                             'low_stock_items', 'best_selling_items', 'recent_orders'));
     }
 
+    /**
+     * トップページからダッシュボードへリダイレクトする
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
     function RedirectToDashboard()
     {
         return redirect('admin/home');

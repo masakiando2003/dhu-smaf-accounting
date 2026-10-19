@@ -3,14 +3,22 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
 use App\Model\Item;
 
+/**
+ * アイテム（商品）の一覧・作成・編集・削除を扱うコントローラー
+ */
 class ItemController extends Controller
 {
+    /**
+     * アイテム一覧を表示する
+     *
+     * @param  \Illuminate\Http\Request  $request  display_items（1ページの表示件数）、page（ページ番号）
+     * @return \Illuminate\View\View
+     */
     function index(Request $request)
     {
         if(isset($request->display_items)){
@@ -43,6 +51,11 @@ class ItemController extends Controller
                                                  'display_items', 'pagination_params'));
     }
     
+    /**
+     * アイテムの新規作成画面を表示する
+     *
+     * @return \Illuminate\View\View
+     */
     function CreateItem()
     {
         $page = array();
@@ -53,6 +66,12 @@ class ItemController extends Controller
         return view('admin/items/detail')->with('page', $page);
     }
 
+    /**
+     * アイテムの詳細（編集）画面を表示する
+     *
+     * @param  int  $id  アイテムID
+     * @return \Illuminate\View\View
+     */
     function ShowItemDetail($id)
     {
         $page = array();
@@ -65,6 +84,11 @@ class ItemController extends Controller
         return view('admin/items/detail', compact('page', 'itemDetail'));
     }
 
+    /**
+     * アイテムの入力チェックのエラーメッセージを返す
+     *
+     * @return array<string, string>
+     */
     function GetItemValidationErrorMessage() {
         return [
             "name.required"                 => "アイテム名称が指定されていません",
@@ -80,6 +104,12 @@ class ItemController extends Controller
         ];
       }
   
+      /**
+       * アイテムの入力チェック用のバリデーターを作成する
+       *
+       * @param  \Illuminate\Http\Request  $request
+       * @return \Illuminate\Contracts\Validation\Validator
+       */
       function GetItemValidator(Request $request) {
         return Validator::make($request->all(), [
                     'name'          => 'required|max:255',
@@ -90,6 +120,14 @@ class ItemController extends Controller
                 ], $this->GetItemValidationErrorMessage());
       }
 
+    /**
+     * アイテムを新規登録する
+     *
+     * 同じ名称のアイテムがすでにある場合は、エラーにして入力画面に戻す.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     function RegisterItem(Request $request)
     {
         $validator = $this->GetItemValidator($request);
@@ -124,6 +162,12 @@ class ItemController extends Controller
         return redirect('/admin/items')->with('success_msg', $msg);
     }
 
+    /**
+     * アイテムを更新する
+     *
+     * @param  \Illuminate\Http\Request  $request  item_id（更新するアイテムID）、ori_name（変更前の名称）ほか
+     * @return \Illuminate\Http\RedirectResponse
+     */
     function EditItem(Request $request)
     {
         if($request->item_id === null){
@@ -170,6 +214,12 @@ class ItemController extends Controller
         return redirect('/admin/items')->with('success_msg', $msg);
     }
 
+    /**
+     * アイテムを削除（論理削除）する
+     *
+     * @param  \Illuminate\Http\Request  $request  del_id（削除するアイテムID）、del_name（アイテム名称）
+     * @return \Illuminate\Http\RedirectResponse
+     */
     function DeleteItem(Request $request)
     {
         $item_id = $request->del_id;
@@ -204,6 +254,12 @@ class ItemController extends Controller
         }
     }
 
+    /**
+     * 指定した名称のアイテムが存在しないかを確認する
+     *
+     * @param  string  $name  アイテム名称
+     * @return string  存在しなければ "true"、存在すれば "false"（文字列）
+     */
     function CheckItemNameIsNotExist($name)
     {
         $item_count = Item::where('name', $name)->count();
