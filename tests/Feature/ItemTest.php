@@ -147,6 +147,38 @@ class ItemTest extends TestCase
         $this->assertSame(50, (int) $item->fresh()->stock);
     }
 
+    public function testEditRenamesItem()
+    {
+        $item = factory(Item::class)->create(['name' => '綿菓子']);
+
+        $this->post('/admin/items/edit', $this->itemInput([
+                'item_id'  => $item->id,
+                'ori_name' => '綿菓子',
+                'name'     => '綿菓子（大）',
+             ]))
+             ->assertRedirect('/admin/items')
+             ->assertSessionHas('success_msg', 'アイテム"綿菓子（大）"を更新しました');
+
+        $this->assertSame('綿菓子（大）', $item->fresh()->name);
+    }
+
+    public function testEditRejectsRenameToExistingName()
+    {
+        factory(Item::class)->create(['name' => 'ポテト']);
+        $item = factory(Item::class)->create(['name' => '綿菓子']);
+
+        $this->from('/admin/items/detail/'.$item->id)
+             ->post('/admin/items/edit', $this->itemInput([
+                'item_id'  => $item->id,
+                'ori_name' => '綿菓子',
+                'name'     => 'ポテト',
+             ]))
+             ->assertRedirect('/admin/items/detail/'.$item->id)
+             ->assertSessionHasErrors();
+
+        $this->assertSame('綿菓子', $item->fresh()->name);
+    }
+
     public function testEditWithoutItemIdRedirectsToIndex()
     {
         $this->post('/admin/items/edit', $this->itemInput())
@@ -162,6 +194,32 @@ class ItemTest extends TestCase
              ->assertSessionHas('success_msg', 'アイテム"綿菓子"を削除しました');
 
         $this->assertSoftDeleted('items', ['id' => $item->id]);
+    }
+
+    public function testDeleteRedirectsBackToSamePage()
+    {
+        $item = factory(Item::class)->create(['name' => '綿菓子']);
+
+        $this->delete('/admin/items/delete/', [
+                'del_id' => $item->id, 'del_name' => '綿菓子', 'display_items' => '5', 'page' => '2',
+             ])
+             ->assertRedirect('/admin/items?display_items=5&page=2');
+    }
+
+    public function testIndexShowsRecordRangeOnSecondPage()
+    {
+        factory(Item::class, 15)->create();
+
+        $this->get('/admin/items?display_items=10&page=2')
+             ->assertOk()
+             ->assertSee('11 - 15 件表示 / 15件');
+    }
+
+    public function testIndexShowsZeroWithoutItems()
+    {
+        $this->get('/admin/items')
+             ->assertOk()
+             ->assertSee('0 件表示 / 0件');
     }
 
     public function testAutocompleteSearchesByPartialName()

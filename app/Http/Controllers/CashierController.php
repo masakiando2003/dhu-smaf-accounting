@@ -39,20 +39,12 @@ class CashierController extends Controller
         else {
             $paginate = 10;
         }
-        if(isset($request->page)){
-            $page = $request->page;
-        } else {
-            $page = 1;
-        }
         $display_items = $paginate;
         $result = $this->cashierService->paginate($paginate);
         $cashier = $result['records'];
         $total_count = $result['total_count'];
-        if($result['is_first_page_fallback']){
-            $page = 1;
-        }
-        $start_record = ($page - 1) * $paginate + 1;
-        $end_record = ($page * $paginate >= count($cashier) ) ? count($cashier) : $page * $paginate;
+        $start_record = $cashier->firstItem() ?? 0;
+        $end_record = $cashier->lastItem() ?? 0;
 
         $pagination_params = [
             "display_items" => $display_items,
@@ -159,7 +151,7 @@ class CashierController extends Controller
                 "display_items" => $display_items,
                 "page" => $page,
             ];
-            return redirect('/admin/cashier?display_items'.$display_items.'&page='.$page)
+            return redirect('/admin/cashier?display_items='.$display_items.'&page='.$page)
                    ->with([
                             'success_msg' => $msg,
                             'pagination_params' => $pagination_params

@@ -29,7 +29,7 @@ class CompanyMembers extends Model
     public    $incrementing = true;
 
     protected $dates = ['created_at', 'updated_at'];
-    protected $fillable = ['name', 'email', 'role', 'position', 'captial', 
+    protected $fillable = ['name', 'email', 'role', 'position', 'capital', 
                            'num_of_share', 'share_percentage', 'status'];
 
     // created_at, updated_at は DB の機能で自動更新する.

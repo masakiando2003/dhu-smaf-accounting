@@ -185,6 +185,23 @@ class CashierTest extends TestCase
         $this->assertSame('2019-12-01 14:30:00', $cashier->fresh()->transaction_time);
     }
 
+    public function testDeleteRedirectsBackToSamePage()
+    {
+        $cashier = factory(Cashier::class)->create();
+
+        $this->delete('/admin/cashier/delete/', ['del_id' => $cashier->id, 'display_items' => '5', 'page' => '2'])
+             ->assertRedirect('/admin/cashier?display_items=5&page=2');
+    }
+
+    public function testIndexShowsRecordRangeOnLastPage()
+    {
+        factory(Cashier::class, 11)->create();
+
+        $this->get('/admin/cashier?display_items=10&page=2')
+             ->assertOk()
+             ->assertSee('11 - 11 件表示 / 11件');
+    }
+
     public function testDeleteSoftDeletesRecord()
     {
         $cashier = factory(Cashier::class)->create();

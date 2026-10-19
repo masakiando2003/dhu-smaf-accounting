@@ -49,20 +49,12 @@ class OrderController extends Controller
         else {
             $paginate = 10;
         }
-        if(isset($request->page)){
-            $page = $request->page;
-        } else {
-            $page = 1;
-        }
         $display_items = $paginate;
         $result = $this->orderService->paginate($paginate);
         $orders = $result['records'];
         $total_count = $result['total_count'];
-        if($result['is_first_page_fallback']){
-            $page = 1;
-        }
-        $start_record = ($page - 1) * $paginate + 1;
-        $end_record = ($page * $paginate >= count($orders) ) ? count($orders) : $page * $paginate;
+        $start_record = $orders->firstItem() ?? 0;
+        $end_record = $orders->lastItem() ?? 0;
 
         $pagination_params = [
             "display_items" => $display_items,
@@ -189,7 +181,7 @@ class OrderController extends Controller
                 "display_items" => $display_items,
                 "page" => $page,
             ];
-            return redirect('/admin/orders?display_items'.$display_items.'&page='.$page)
+            return redirect('/admin/orders?display_items='.$display_items.'&page='.$page)
                    ->with([
                             'success_msg' => $msg,
                             'pagination_params' => $pagination_params
