@@ -152,6 +152,18 @@ class OrderServiceTest extends TestCase
         $this->assertSame(100, (int) $this->potato->fresh()->stock);
     }
 
+    public function testRegisterExcludesItemMarkedAsDeletedFromTotal()
+    {
+        $order = $this->service->register($this->orderData(['paid' => 1000]), [
+            $this->orderItem($this->cottonCandy, 300, 1),
+            $this->orderItem($this->potato, 150, 1, true),
+        ]);
+
+        // 合計金額は削除チェックのない綿菓子の 300円だけ
+        $this->assertSame(700, (int) $order->fresh()->change);
+        $this->assertSame(32000 + 300, $this->companyCash());
+    }
+
     public function testRegisterWithZeroPaidDoesNotCreateCashier()
     {
         $this->service->register($this->orderData(['paid' => 0, 'change' => 0]), [
@@ -230,6 +242,61 @@ class OrderServiceTest extends TestCase
         $this->assertSame(98, (int) $this->potato->fresh()->stock);
     }
 
+    public function testUpdateRemovesItemMarkedAsDeleted()
+    {
+        $order = $this->service->register($this->orderData(['paid' => 1000]), [
+            $this->orderItem($this->cottonCandy, 300, 2),
+            $this->orderItem($this->potato, 150, 1),
+        ]);
+        $this->assertSame(32000 + 750, $this->companyCash());
+
+        $this->service->update($order->id, $this->orderData(['paid' => 1000]), [
+            $this->orderItem($this->cottonCandy, 300, 2),
+            $this->orderItem($this->potato, 150, 1, true),
+        ]);
+
+        $this->assertSame(1, OrderItem::where('order_id', $order->id)->count());
+        $this->assertDatabaseMissing('order_items', [
+            'order_id' => $order->id, 'item_id' => $this->potato->id, 'deleted_at' => null,
+        ]);
+        // 削除した明細の在庫が戻り、残りの明細の在庫はそのまま
+        $this->assertSame(100, (int) $this->potato->fresh()->stock);
+        $this->assertSame(48, (int) $this->cottonCandy->fresh()->stock);
+        $this->assertSame(400, (int) $order->fresh()->change);
+        $this->assertSame(32000 + 600, $this->companyCash());
+    }
+
+    public function testUpdateIgnoresItemMarkedAsDeletedThatWasNotSaved()
+    {
+        $order = $this->service->register($this->orderData(), [
+            $this->orderItem($this->cottonCandy, 300, 1),
+        ]);
+
+        // 画面で追加した行に、保存前に削除チェックを付けた場合
+        $this->service->update($order->id, $this->orderData(), [
+            $this->orderItem($this->cottonCandy, 300, 1),
+            $this->orderItem($this->potato, 150, 1, true),
+        ]);
+
+        $this->assertSame(1, OrderItem::where('order_id', $order->id)->count());
+        $this->assertSame(100, (int) $this->potato->fresh()->stock);
+    }
+
+    public function testUpdateAdjustsCashByPriceTimesQuantity()
+    {
+        $order = $this->service->register($this->orderData(['paid' => 1000]), [
+            $this->orderItem($this->cottonCandy, 300, 3),
+        ]);
+        $this->assertSame(32000 + 900, $this->companyCash());
+
+        $this->service->update($order->id, $this->orderData(['paid' => 1000]), [
+            $this->orderItem($this->cottonCandy, 300, 1),
+        ]);
+
+        // 変更前の 900円（300円 × 3個）を引いてから、変更後の 300円を足す
+        $this->assertSame(32000 + 300, $this->companyCash());
+    }
+
     public function testUpdateKeepsCreatedAtWhenNotGiven()
     {
         $order = $this->service->register($this->orderData(), [
@@ -272,6 +339,31 @@ class OrderServiceTest extends TestCase
         $this->assertSame(100, (int) $this->potato->fresh()->stock);
     }
 
+    public function testDeleteDecreasesCompanyCash()
+    {
+        $order = $this->service->register($this->orderData(), [
+            $this->orderItem($this->cottonCandy, 300, 2),
+            $this->orderItem($this->potato, 150, 1),
+        ]);
+        $this->assertSame(32000 + 750, $this->companyCash());
+
+        $this->service->delete($order->id);
+
+        $this->assertSame(32000, $this->companyCash());
+    }
+
+    public function testDeleteOrderWithoutIncomeKeepsCompanyCash()
+    {
+        // 支払 0円の注文は、登録時に出納記録も現金の加算もない
+        $order = $this->service->register($this->orderData(['paid' => 0, 'change' => 0]), [
+            $this->orderItem($this->cottonCandy, 300, 1),
+        ]);
+
+        $this->service->delete($order->id);
+
+        $this->assertSame(32000, $this->companyCash());
+    }
+
     public function testDeleteRollsBackAndRethrowsOriginalException()
     {
         $order = $this->service->register($this->orderData(), [
@@ -289,6 +381,7 @@ class OrderServiceTest extends TestCase
         $this->assertSame(1, OrderItem::where('order_id', $order->id)->count());
         $this->assertSame(1, Cashier::where('order_id', $order->id)->count());
         $this->assertSame(48, (int) $this->cottonCandy->fresh()->stock);
+        $this->assertSame(32000 + 600, $this->companyCash());
     }
 
     public function testDeleteThrowsWhenOrderIsMissing()

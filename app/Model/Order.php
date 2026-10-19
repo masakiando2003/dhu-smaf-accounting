@@ -4,6 +4,7 @@ namespace App\Model;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 /**
  * 注文
@@ -66,6 +67,7 @@ class Order extends Model
 
         $order_count = Order::join('order_items', function($join){
             $join->on('orders.id', '=', 'order_items.order_id');
+            $join->whereNull('order_items.deleted_at');
         })
         ->where('order_items.item_id', $item_id)
         ->where('orders.created_at', '>=', $start_time)
@@ -101,6 +103,7 @@ class Order extends Model
     {
         $orderitems_count = Order::join('order_items', function($join){
                             $join->on('orders.id', '=', 'order_items.order_id');
+            $join->whereNull('order_items.deleted_at');
                        })
                        ->where('order_items.item_id', $item_id)
                        ->where('orders.created_at', '>=', $date." 00:00:00")
@@ -122,6 +125,7 @@ class Order extends Model
         $end_date = $dates[count($dates)-1];
         $orderitems_count = Order::join('order_items', function($join){
                             $join->on('orders.id', '=', 'order_items.order_id');
+            $join->whereNull('order_items.deleted_at');
                        })
                        ->where('orders.created_at', '>=', $start_date." 00:00:00")
                        ->where('orders.created_at', '<=', $end_date." 23:59:59")
@@ -132,34 +136,35 @@ class Order extends Model
     /**
      * 指定した日の売上金額を取得する
      *
-     * ※ 現状は数量を掛けずに、注文明細の単価だけを合計している.
+     * 売上金額は 単価 × 数量 の合計. 削除された注文・注文明細は含めない.
      *
      * @param  string  $date     日付（Y-m-d）
      * @param  int     $item_id  アイテムID. 0 のときは全アイテムが対象
-     * @return int|string
+     * @return int
      */
     public function GetOrderItemsSellAmountByDate(string $date, int $item_id=0)
     {
         $order_query = Order::join('order_items', function($join){
                         $join->on('orders.id', '=', 'order_items.order_id');
+            $join->whereNull('order_items.deleted_at');
                        })
                        ->where('orders.created_at', '>=', $date." 00:00:00")
                        ->where('orders.created_at', '<=', $date." 23:59:59");
         if($item_id!=0){
             $order_query->where('order_items.item_id', $item_id);
         }
-        $order_total = $order_query->sum('order_items.price', 'order_items.quantity');
+        $order_total = $order_query->sum(DB::raw('order_items.price * order_items.quantity'));
 
-        return $order_total;
+        return (int) $order_total;
     }
 
     /**
      * 指定した期間の売上金額を取得する
      *
-     * ※ 現状は数量を掛けずに、注文明細の単価だけを合計している.
+     * 売上金額は 単価 × 数量 の合計. 削除された注文・注文明細は含めない.
      *
      * @param  string[]  $dates  日付（Y-m-d）の配列. 最初と最後の日付を期間として使う
-     * @return int|string
+     * @return int
      */
     public function GetOrderItemsTotalSellAmount($dates)
     {
@@ -167,10 +172,11 @@ class Order extends Model
         $end_date = $dates[count($dates)-1];
         $order_total = Order::join('order_items', function($join){
                         $join->on('orders.id', '=', 'order_items.order_id');
+            $join->whereNull('order_items.deleted_at');
                        })
                        ->where('orders.created_at', '>=', $start_date." 00:00:00")
                        ->where('orders.created_at', '<=', $end_date." 23:59:59")
-                       ->sum('order_items.price', 'order_items.quantity');
-        return $order_total;
+                       ->sum(DB::raw('order_items.price * order_items.quantity'));
+        return (int) $order_total;
     }
 }
