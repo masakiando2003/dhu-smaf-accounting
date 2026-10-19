@@ -28,7 +28,7 @@ class OrderService
     private $db;
 
     /**
-     * @param  \Illuminate\Database\ConnectionInterface  $db  DB 接続（削除処理のトランザクションに使う）
+     * @param  \Illuminate\Database\ConnectionInterface  $db  DB 接続（削除処理のトランザクションと、金額を計算する SQL 式に使う）
      */
     public function __construct(ConnectionInterface $db)
     {
@@ -103,9 +103,9 @@ class OrderService
             $order_item_quantity = ($order_item['quantity'] !='') ? $order_item['quantity'] : 0;
             $new_order_item->price = $order_item_price;
             $new_order_item->quantity = $order_item_quantity;
-            $order_item_total += $order_item_price * $order_item_quantity;
             $new_order_item->created_at = Carbon::now();
             if(!$order_item['delete']){
+                $order_item_total += $order_item_price * $order_item_quantity;
                 $new_order_item->save();
                 //在庫数更新
                 Item::where('id', $item_id)->decrement('stock', $order_item_quantity);
@@ -163,8 +163,8 @@ class OrderService
                 'updated_at'    => Carbon::now()
              ]);
 
-        $old_order_item_total = OrderItem::where('order_id', $order_id)
-                                ->sum('price', 'quantity');
+        $old_order_item_total = (int) OrderItem::where('order_id', $order_id)
+                                ->sum($this->db->raw('price * quantity'));
 
         $order_item_total = 0;
         foreach($order_items as $order_item){
@@ -172,11 +172,12 @@ class OrderService
                 $item_id = intval($order_item['item_id']);
                 // 在庫数更新
                 $order_item_info = OrderItem::where('order_id', $order_id)
-                                            ->where('item_id', $item_id)->get();
-                $old_order_item_quantity = $order_item_info->quantity;
-                Item::where('id', $item_id)->increment('stock', $old_order_item_quantity_count);
-                OrderItem::where('order_id', $order_id)->where('item_id', $item_id)
-                          ->delete();
+                                            ->where('item_id', $item_id)->first();
+                if($order_item_info !== null){
+                    Item::where('id', $item_id)->increment('stock', $order_item_info->quantity);
+                    OrderItem::where('order_id', $order_id)->where('item_id', $item_id)
+                              ->delete();
+                }
             } else {
                 $item_id = intval($order_item['item_id']);
                 $order_item_price = ($order_item['price'] !='') ? intval($order_item['price']) : 0;
@@ -241,7 +242,7 @@ class OrderService
     /**
      * 注文を削除（論理削除）する
      *
-     * 注文明細と出納記録も論理削除し、在庫数を戻す.
+     * 注文明細と出納記録も論理削除し、在庫数と会社の現金を戻す.
      *
      * 途中でエラーが起きた場合は、それまでの変更をすべて元に戻して、元の例外を投げる.
      *
@@ -258,11 +259,17 @@ class OrderService
 
             // 在庫数更新
             $order_items = OrderItem::where('order_id', $order_id)->get();
+            $order_item_total = 0;
             foreach($order_items as $order_item){
                 Item::where('id', $order_item->item_id)->increment('stock', $order_item->quantity);
+                $order_item_total += $order_item->price * $order_item->quantity;
             }
             OrderItem::where('order_id', $order_id)->delete();
 
+            // 会社の現金を更新する（登録時に収入を記録した注文だけ、現金に加算されている）
+            if(Cashier::where('order_id', $order_id)->exists()){
+                CompanyInfo::decrement('cash', $order_item_total);
+            }
             Cashier::where('order_id', $order_id)->delete();
 
             $order->save();
