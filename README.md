@@ -21,13 +21,13 @@
 
 ## 動かし方
 ### 1. リポジトリと Laradock の取得
+Laradock はリポジトリと同じ階層に clone します。
 ```bash
 git clone https://github.com/masakiando2003/dhu-smaf-accounting.git
-cd dhu-smaf-accounting
 git clone https://github.com/laradock/laradock.git
 cd laradock
 cp .env.example .env
-# .env の APP_CODE_PATH_HOST を ../smaf-accounting/ に変更
+# .env の APP_CODE_PATH_HOST を ../dhu-smaf-accounting/ に変更
 ```
 
 ### 2. コンテナの起動
