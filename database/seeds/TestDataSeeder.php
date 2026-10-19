@@ -65,13 +65,15 @@ class TestDataSeeder extends Seeder
                 'remarks'     => 'テストデータ',
             ]);
 
-            // 3件目は「削除済みの注文が集計に含まれない」ことの確認用
+            // 注文日時はレポートの集計日（学園祭の 2019-11-30・2019-12-01）に合わせる.
+            // 2件目は「時間帯の終わり（13:59）の秒も集計に含まれる」ことの確認用.
+            // 3件目は「削除済みの注文が集計に含まれない」ことの確認用.
             $orders = [
-                ['num_of_people' => 2, 'paid' => 1000, 'deleted' => false,
+                ['num_of_people' => 2, 'paid' => 1000, 'deleted' => false, 'order_at' => '2019-11-30 10:15:00',
                  'items' => [[$cotton_candy_id, 300, 2], [$potato_id, 150, 1]]],
-                ['num_of_people' => 1, 'paid' => 500, 'deleted' => false,
+                ['num_of_people' => 1, 'paid' => 500, 'deleted' => false, 'order_at' => '2019-12-01 13:59:30',
                  'items' => [[$cotton_candy_id, 300, 1], [$potato_id, 150, 1]]],
-                ['num_of_people' => 3, 'paid' => 300, 'deleted' => true,
+                ['num_of_people' => 3, 'paid' => 300, 'deleted' => true, 'order_at' => '2019-11-30 11:00:00',
                  'items' => [[$cotton_candy_id, 300, 1]]],
             ];
 
@@ -88,6 +90,7 @@ class TestDataSeeder extends Seeder
                     'paid'          => $order['paid'],
                     'change'        => $change,
                     'remarks'       => 'テストデータ',
+                    'order_at'      => $order['order_at'],
                     'created_at'    => $now,
                     'deleted_at'    => $deleted_at,
                 ]);
@@ -105,7 +108,7 @@ class TestDataSeeder extends Seeder
 
                 // 注文登録時にアプリが作る「収入」の出納記録と同じ内容
                 DB::table('cashier')->insert([
-                    'transaction_time' => $now,
+                    'transaction_time' => $order['order_at'],
                     'cashier_type'     => 'income',
                     'order_id'         => $order_id,
                     'description'      => '注文ID: '.$order_id.'に支払する',
@@ -118,8 +121,9 @@ class TestDataSeeder extends Seeder
                 ]);
             }
 
+            // 材料費は学園祭の前日に支払った想定
             DB::table('cashier')->insert([
-                'transaction_time' => $now,
+                'transaction_time' => '2019-11-29 18:00:00',
                 'cashier_type'     => 'payment',
                 'description'      => '材料費',
                 'income_amount'    => 0,

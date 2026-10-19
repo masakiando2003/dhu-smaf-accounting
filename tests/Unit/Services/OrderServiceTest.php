@@ -103,6 +103,8 @@ class OrderServiceTest extends TestCase
         ]);
 
         $order = $order->fresh();
+        // 注文日時を指定しない場合は、注文日時・作成日時ともに現在日時
+        $this->assertSame('2019-11-30 12:00:00', $order->order_at->format('Y-m-d H:i:s'));
         $this->assertSame('2019-11-30 12:00:00', $order->created_at->format('Y-m-d H:i:s'));
         // お釣りは 支払金額 − 合計金額（750円）で計算し直す
         $this->assertSame(250, (int) $order->change);
@@ -116,17 +118,25 @@ class OrderServiceTest extends TestCase
             'payment_amount'   => 250,
             'deduction_amount' => 750,
             'remarks'          => '備考',
+            'transaction_time' => '2019-11-30 12:00:00',
         ]);
         $this->assertSame(32000 + 750, $this->companyCash());
     }
 
-    public function testRegisterUsesGivenCreatedAt()
+    public function testRegisterUsesGivenOrderAt()
     {
+        Carbon::setTestNow('2026-10-19 14:00:00');
+
         $order = $this->service->register($this->orderData(), [
             $this->orderItem($this->cottonCandy, 300, 1),
         ], '2019-12-01 10:15:00');
 
-        $this->assertSame('2019-12-01 10:15:00', $order->fresh()->created_at->format('Y-m-d H:i:s'));
+        $order = $order->fresh();
+        $this->assertSame('2019-12-01 10:15:00', $order->order_at->format('Y-m-d H:i:s'));
+        // 作成日時は、注文日時ではなく実際に登録した日時
+        $this->assertSame('2026-10-19 14:00:00', $order->created_at->format('Y-m-d H:i:s'));
+        // 収入の出納記録の取引日時は、注文日時と同じ
+        $this->assertSame('2019-12-01 10:15:00', Cashier::where('order_id', $order->id)->first()->transaction_time);
     }
 
     public function testRegisterTreatsEmptyPriceAndQuantityAsZero()
@@ -297,7 +307,7 @@ class OrderServiceTest extends TestCase
         $this->assertSame(32000 + 300, $this->companyCash());
     }
 
-    public function testUpdateKeepsCreatedAtWhenNotGiven()
+    public function testUpdateKeepsOrderAtWhenNotGiven()
     {
         $order = $this->service->register($this->orderData(), [
             $this->orderItem($this->cottonCandy, 300, 1),
@@ -307,20 +317,28 @@ class OrderServiceTest extends TestCase
             $this->orderItem($this->cottonCandy, 300, 1),
         ]);
 
-        $this->assertSame('2019-11-30 10:00:00', $order->fresh()->created_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2019-11-30 10:00:00', $order->fresh()->order_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2019-11-30 10:00:00', Cashier::where('order_id', $order->id)->first()->transaction_time);
     }
 
-    public function testUpdateChangesCreatedAtWhenGiven()
+    public function testUpdateChangesOrderAtWhenGiven()
     {
+        Carbon::setTestNow('2026-10-19 14:00:00');
         $order = $this->service->register($this->orderData(), [
             $this->orderItem($this->cottonCandy, 300, 1),
         ], '2019-11-30 10:00:00');
+        Carbon::setTestNow('2026-10-20 09:00:00');
 
         $this->service->update($order->id, $this->orderData(), [
             $this->orderItem($this->cottonCandy, 300, 1),
         ], '2019-12-01 14:30:00');
 
-        $this->assertSame('2019-12-01 14:30:00', $order->fresh()->created_at->format('Y-m-d H:i:s'));
+        $updated = $order->fresh();
+        $this->assertSame('2019-12-01 14:30:00', $updated->order_at->format('Y-m-d H:i:s'));
+        // 作成日時は、登録したときのまま変えない
+        $this->assertSame('2026-10-19 14:00:00', $updated->created_at->format('Y-m-d H:i:s'));
+        // 収入の出納記録の取引日時も、新しい注文日時にそろえる
+        $this->assertSame('2019-12-01 14:30:00', Cashier::where('order_id', $order->id)->first()->transaction_time);
     }
 
     public function testDeleteSoftDeletesOrderAndRestoresStock()

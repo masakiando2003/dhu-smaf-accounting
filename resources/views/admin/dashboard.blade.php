@@ -145,7 +145,7 @@
           @foreach($recent_orders as $order)
             <tr>
               <td><a href="/admin/orders/detail/{{ $order->id }}">{{ $order->id }}</a></td>
-              <td>{{ $order->created_at->format('Y/m/d H:i:s') }}</td>
+              <td>{{ $order->order_at->format('Y/m/d H:i:s') }}</td>
               <td class="text-right">{{ $order->num_of_people }}</td>
               <td class="text-right">{{ number_format($order->GetOrderTotal($order->id)) }}円</td>
             </tr>

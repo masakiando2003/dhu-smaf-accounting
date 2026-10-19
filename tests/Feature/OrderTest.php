@@ -166,7 +166,7 @@ class OrderTest extends TestCase
 
         $this->post('/admin/orders/register', $input);
 
-        $this->assertSame('2019-11-30 10:15:00', Order::first()->created_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2019-11-30 10:15:00', Order::first()->order_at->format('Y-m-d H:i:s'));
     }
 
     public function testRegisterWithZeroPaidDoesNotCreateCashier()

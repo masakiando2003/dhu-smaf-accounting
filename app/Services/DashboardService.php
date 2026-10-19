@@ -70,7 +70,7 @@ class DashboardService
                                 ->limit(5)
                                 ->get();
 
-        $recent_orders = Order::orderByDesc('created_at')->limit(5)->get();
+        $recent_orders = Order::orderByDesc('order_at')->limit(5)->get();
 
         return compact('company_info', 'sales', 'order_count', 'visitor_count',
                        'expenditure', 'profit', 'cash_balance',

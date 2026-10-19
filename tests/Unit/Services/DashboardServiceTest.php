@@ -128,13 +128,13 @@ class DashboardServiceTest extends TestCase
     public function testRecentOrdersAreNewestFiveWithoutDeleted()
     {
         foreach (range(1, 6) as $day) {
-            factory(Order::class)->create(['created_at' => "2019-11-0{$day} 10:00:00"]);
+            factory(Order::class)->create(['order_at' => "2019-11-0{$day} 10:00:00"]);
         }
-        factory(Order::class)->create(['created_at' => '2019-11-30 10:00:00'])->delete();
+        factory(Order::class)->create(['order_at' => '2019-11-30 10:00:00'])->delete();
 
         $dates = $this->service->getSummary()['recent_orders']
                       ->map(function ($order) {
-                          return $order->created_at->format('Y-m-d');
+                          return $order->order_at->format('Y-m-d');
                       })->all();
 
         $this->assertSame(['2019-11-06', '2019-11-05', '2019-11-04', '2019-11-03', '2019-11-02'], $dates);
