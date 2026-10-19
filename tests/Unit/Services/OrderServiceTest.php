@@ -36,7 +36,7 @@ class OrderServiceTest extends TestCase
         // 会社の現金（初期値 32,000円）
         $this->seed(CompanyInfoTableSeeder::class);
 
-        $this->service = new OrderService();
+        $this->service = $this->app->make(OrderService::class);
         $this->cottonCandy = factory(Item::class)->create(['price' => 300, 'stock' => 50]);
         $this->potato = factory(Item::class)->create(['price' => 150, 'stock' => 100]);
     }

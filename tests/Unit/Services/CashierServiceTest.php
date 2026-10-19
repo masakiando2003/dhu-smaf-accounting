@@ -22,7 +22,7 @@ class CashierServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new CashierService();
+        $this->service = $this->app->make(CashierService::class);
     }
 
     protected function tearDown(): void

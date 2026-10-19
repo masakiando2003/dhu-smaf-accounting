@@ -22,7 +22,7 @@ class ItemServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new ItemService();
+        $this->service = $this->app->make(ItemService::class);
     }
 
     /**
