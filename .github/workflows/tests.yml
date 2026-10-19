@@ -5,7 +5,7 @@ name: tests
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
 
 # 同じブランチで新しく実行されたら、古い実行は取り消す
