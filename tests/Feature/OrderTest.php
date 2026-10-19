@@ -78,6 +78,15 @@ class OrderTest extends TestCase
              ->assertSee('/admin/orders/detail/'.$order->id);
     }
 
+    public function testIndexShowsPaginationLinksWhenOrdersExceedOnePage()
+    {
+        factory(Order::class, 11)->create();
+
+        $this->get('/admin/orders')
+             ->assertOk()
+             ->assertSee('page=2');
+    }
+
     public function testCreatePageListsItems()
     {
         $this->get('/admin/orders/create')

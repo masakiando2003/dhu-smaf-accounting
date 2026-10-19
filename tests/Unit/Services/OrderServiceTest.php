@@ -12,11 +12,13 @@ use Carbon\Carbon;
 use CompanyInfoTableSeeder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\SimulatesDatabaseError;
 use Tests\TestCase;
 
 class OrderServiceTest extends TestCase
 {
     use RefreshDatabase;
+    use SimulatesDatabaseError;
 
     /** @var \App\Services\OrderService */
     private $service;
@@ -268,6 +270,25 @@ class OrderServiceTest extends TestCase
         $this->assertSame(0, Cashier::where('order_id', $order->id)->count());
         $this->assertSame(50, (int) $this->cottonCandy->fresh()->stock);
         $this->assertSame(100, (int) $this->potato->fresh()->stock);
+    }
+
+    public function testDeleteRollsBackAndRethrowsOriginalException()
+    {
+        $order = $this->service->register($this->orderData(), [
+            $this->orderItem($this->cottonCandy, 300, 2),
+        ]);
+        // 在庫を戻し、明細と出納記録を論理削除した後の、最後の保存で DB エラーが起きたことにする
+        $this->failOnSaving(Order::class);
+
+        $this->assertThrowsSimulatedDatabaseError(function () use ($order) {
+            $this->service->delete($order->id);
+        });
+
+        // すべての変更が元に戻っている
+        $this->assertDatabaseHas('orders', ['id' => $order->id, 'deleted_at' => null]);
+        $this->assertSame(1, OrderItem::where('order_id', $order->id)->count());
+        $this->assertSame(1, Cashier::where('order_id', $order->id)->count());
+        $this->assertSame(48, (int) $this->cottonCandy->fresh()->stock);
     }
 
     public function testDeleteThrowsWhenOrderIsMissing()

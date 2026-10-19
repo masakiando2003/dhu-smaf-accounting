@@ -7,11 +7,13 @@ use App\Services\ItemService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Pagination\Paginator;
+use Tests\Concerns\SimulatesDatabaseError;
 use Tests\TestCase;
 
 class ItemServiceTest extends TestCase
 {
     use RefreshDatabase;
+    use SimulatesDatabaseError;
 
     /** @var \App\Services\ItemService */
     private $service;
@@ -160,6 +162,19 @@ class ItemServiceTest extends TestCase
         $this->service->delete($item->id);
 
         $this->assertSoftDeleted('items', ['id' => $item->id]);
+    }
+
+    public function testDeleteRollsBackAndRethrowsOriginalException()
+    {
+        $item = factory(Item::class)->create();
+        // 論理削除の後の保存で DB エラーが起きたことにする
+        $this->failOnSaving(Item::class);
+
+        $this->assertThrowsSimulatedDatabaseError(function () use ($item) {
+            $this->service->delete($item->id);
+        });
+
+        $this->assertDatabaseHas('items', ['id' => $item->id, 'deleted_at' => null]);
     }
 
     public function testDeleteThrowsWhenItemIsMissing()

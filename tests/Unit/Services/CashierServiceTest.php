@@ -7,11 +7,13 @@ use App\Services\CashierService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\SimulatesDatabaseError;
 use Tests\TestCase;
 
 class CashierServiceTest extends TestCase
 {
     use RefreshDatabase;
+    use SimulatesDatabaseError;
 
     /** @var \App\Services\CashierService */
     private $service;
@@ -111,6 +113,19 @@ class CashierServiceTest extends TestCase
     {
         $this->expectException(ModelNotFoundException::class);
         $this->service->find(999999);
+    }
+
+    public function testDeleteRollsBackAndRethrowsOriginalException()
+    {
+        $cashier = factory(Cashier::class)->create();
+        // 論理削除の後の保存で DB エラーが起きたことにする
+        $this->failOnSaving(Cashier::class);
+
+        $this->assertThrowsSimulatedDatabaseError(function () use ($cashier) {
+            $this->service->delete($cashier->id);
+        });
+
+        $this->assertDatabaseHas('cashier', ['id' => $cashier->id, 'deleted_at' => null]);
     }
 
     public function testDeleteSoftDeletesRecord()

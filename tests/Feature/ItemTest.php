@@ -42,6 +42,15 @@ class ItemTest extends TestCase
              ->assertSee('ポテト');
     }
 
+    public function testIndexShowsPaginationLinksWhenItemsExceedOnePage()
+    {
+        factory(Item::class, 11)->create();
+
+        $this->get('/admin/items')
+             ->assertOk()
+             ->assertSee('page=2');
+    }
+
     public function testCreatePageIsShown()
     {
         $this->get('/admin/items/create')
