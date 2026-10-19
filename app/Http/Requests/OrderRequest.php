@@ -51,6 +51,31 @@ class OrderRequest extends FormRequest
     }
 
     /**
+     * 入力チェックに、注文明細のアイテムの重複チェックを追加する
+     *
+     * 削除チェックを付けた明細は対象外.
+     *
+     * @param  \Illuminate\Validation\Validator  $validator
+     * @return void
+     */
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            $item_ids = [];
+            foreach($this->orderItems() as $order_item){
+                if($order_item['delete']){
+                    continue;
+                }
+                if(in_array($order_item['item_id'], $item_ids, true)){
+                    $validator->errors()->add('order_items', '同じアイテムが複数の行で選択されています。数量でまとめてください。');
+                    return;
+                }
+                $item_ids[] = $order_item['item_id'];
+            }
+        });
+    }
+
+    /**
      * 入力された注文明細を取得する
      *
      * 注文明細は item_id_N / price_N / quantity_N / delete_item_N（N は 1〜order_item_count）で受け取る.

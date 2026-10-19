@@ -266,6 +266,31 @@ class OrderServiceTest extends TestCase
         $this->assertSame(32000 + 600, $this->companyCash());
     }
 
+    public function testUpdateReplacesItemWhenRowItemIsChanged()
+    {
+        $order = $this->service->register($this->orderData(['paid' => 1000]), [
+            $this->orderItem($this->cottonCandy, 300, 2),
+        ]);
+        $this->assertSame(32000 + 600, $this->companyCash());
+
+        // 画面で、1行目のアイテムを綿菓子からポテトに変えた場合
+        $this->service->update($order->id, $this->orderData(['paid' => 1000]), [
+            $this->orderItem($this->potato, 150, 1),
+        ]);
+
+        $this->assertSame(
+            [$this->potato->id],
+            OrderItem::where('order_id', $order->id)->pluck('item_id')->map(function ($id) {
+                return (int) $id;
+            })->all()
+        );
+        // 綿菓子の在庫は戻り、ポテトの在庫が減る
+        $this->assertSame(50, (int) $this->cottonCandy->fresh()->stock);
+        $this->assertSame(99, (int) $this->potato->fresh()->stock);
+        $this->assertSame(850, (int) $order->fresh()->change);
+        $this->assertSame(32000 + 150, $this->companyCash());
+    }
+
     public function testUpdateIgnoresItemMarkedAsDeletedThatWasNotSaved()
     {
         $order = $this->service->register($this->orderData(), [
