@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ParsesTransactionTime;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -9,6 +10,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class CashierRequest extends FormRequest
 {
+    use ParsesTransactionTime;
+
     /**
      * このリクエストを実行してよいかを判定する
      *

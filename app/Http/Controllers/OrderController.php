@@ -3,16 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 use App\Http\Requests\OrderRequest;
-use App\Model\Item;
-use App\Model\Order;
-use App\Model\OrderItem;
-use App\Model\Cashier;
-use App\Model\CompanyInfo;
-
-use Carbon\Carbon;
+use App\Services\ItemService;
+use App\Services\OrderService;
 
 /**
  * 注文の一覧・作成・編集・削除を扱うコントローラー
@@ -21,6 +15,26 @@ use Carbon\Carbon;
  */
 class OrderController extends Controller
 {
+    /**
+     * @var \App\Services\OrderService
+     */
+    private $orderService;
+
+    /**
+     * @var \App\Services\ItemService
+     */
+    private $itemService;
+
+    /**
+     * @param  \App\Services\OrderService  $orderService
+     * @param  \App\Services\ItemService   $itemService
+     */
+    public function __construct(OrderService $orderService, ItemService $itemService)
+    {
+        $this->orderService = $orderService;
+        $this->itemService = $itemService;
+    }
+
     /**
      * 注文一覧を表示する
      *
@@ -41,11 +55,10 @@ class OrderController extends Controller
             $page = 1;
         }
         $display_items = $paginate;
-        $query = Order::orderBy('id', 'asc');
-        $total_count = $query->count();
-        $orders = $query->paginate($paginate);
-        if(count($orders)<=0){
-            $orders = $query->paginate($paginate, ['*'], 'page', 1);
+        $result = $this->orderService->paginate($paginate);
+        $orders = $result['records'];
+        $total_count = $result['total_count'];
+        if($result['is_first_page_fallback']){
             $page = 1;
         }
         $start_record = ($page - 1) * $paginate + 1;
@@ -71,7 +84,7 @@ class OrderController extends Controller
         $page['content_header'] = "新規注文作成";
         $page['action'] = "/admin/orders/register";
         $page['submit'] = '作成';
-        $items = Item::get();
+        $items = $this->itemService->all();
         return view('admin/orders/detail', compact('page', 'items'));
     }
 
@@ -89,15 +102,10 @@ class OrderController extends Controller
         $page['action'] = "/admin/orders/edit";
         $page['submit'] = '更新';
 
-        $orderDetail = Order::find($id);
-        $orderItemDetail = OrderItem::where('order_id', $id)->get();
-        $order_total = 0;
-        foreach($orderItemDetail as $orderItem){
-            $order_total += ($orderItem->price * $orderItem->quantity);
-        }
-        $orderDetail->order_total = $order_total;
-        $orderDetail->change = $orderDetail->paid - $order_total;
-        $items = Item::get();
+        $order_detail = $this->orderService->getOrderDetail($id);
+        $orderDetail = $order_detail['order'];
+        $orderItemDetail = $order_detail['order_items'];
+        $items = $this->itemService->all();
         return view('admin/orders/detail', compact('page', 'orderDetail', 'orderItemDetail', 'items'));
     }
 
@@ -112,68 +120,12 @@ class OrderController extends Controller
      */
     function RegisterOrder(OrderRequest $request)
     {
-        $new_order = new Order();
-        $new_order->num_of_people = $request->num_of_people;
-        $new_order->paid = $request->paid;
-        $new_order->change = $request->change;
-        $new_order->remarks = $request->remarks;
-        if($request->transactionTimeType == 'manual')
-        {
-            $formatted_date = date('Y-m-d', strtotime($request->transactionDate));
-            $new_order->created_at = $formatted_date.' '.$request->transactionTime;
-        }
-        else
-        {
-            $new_order->created_at = Carbon::now();
-        }
-        $new_order->save();
+        $new_order = $this->orderService->register(
+            $this->orderData($request),
+            $request->orderItems(),
+            $request->manualTransactionTime()
+        );
         $order_id = $new_order->id;
-
-        $order_item_count = $request->order_item_count;
-        $order_item_total = 0;
-        for($i = 1; $i <= $order_item_count; $i++){
-            if(isset($_POST['item_id_'.$i]) && $_POST['item_id_'.$i]!=''){
-                $item_id = $_POST['item_id_'.$i];
-                $new_order_item = new OrderItem();
-                $new_order_item->order_id = $order_id;
-                $new_order_item->item_id = $item_id;
-                $order_item_price = ($_POST['price_'.$i] !='') ? $_POST['price_'.$i] : 0;
-                $order_item_quantity = ($_POST['quantity_'.$i] !='') ? $_POST['quantity_'.$i] : 0;
-                $new_order_item->price = $order_item_price;
-                $new_order_item->quantity = $order_item_quantity;
-                $order_item_total += $order_item_price * $order_item_quantity;
-                $new_order_item->created_at = Carbon::now();
-                if(!isset($_POST['delete_item_'.$i])){
-                    $new_order_item->save();
-                    //在庫数更新
-                    Item::where('id', $item_id)->decrement('stock', $order_item_quantity);
-                }
-            }
-        }
-
-        $change = $request->paid - $order_item_total;
-        Order::where('id', $order_id)
-             ->update([
-                'change' => $change
-        ]);
-
-        if($request->paid > 0){
-            // 直接出納記録を作成する
-            $new_cashier = new Cashier();
-            $new_cashier->transaction_time = date('Y-m-d H:i:s');
-            $new_cashier->cashier_type = 'income';
-            $new_cashier->order_id = $order_id;
-            $new_cashier->description = '注文ID: '.$order_id.'に支払する';
-            $new_cashier->income_amount = $request->paid;
-            $new_cashier->payment_amount = $request->change;
-            $new_cashier->deduction_amount = $request->paid - $request->change;
-            $new_cashier->remarks = $request->remarks;
-            $new_cashier->created_at = Carbon::now();
-            $new_cashier->save();
-
-            //会社の現金を更新する
-            CompanyInfo::increment('cash', $order_item_total);
-        }
 
         $msg="新規注文ID: \"$order_id\"を作成しました";
         if($request->multiple_create_flag == 1)
@@ -204,95 +156,13 @@ class OrderController extends Controller
 
         $order_id = $request->order_id;
 
-        // 更新.
-        Order::where('id', $order_id)
-             ->update([
-                'num_of_people' => $request->num_of_people,
-                'paid'          => $request->paid,
-                'change'        => $request->change,
-                'remarks'       => $request->remarks,
-                'updated_at'    => Carbon::now()
-             ]);
+        $this->orderService->update(
+            $order_id,
+            $this->orderData($request),
+            $request->orderItems(),
+            $request->manualTransactionTime()
+        );
 
-        $old_order_item_total = OrderItem::where('order_id', $order_id)
-                                ->sum('price', 'quantity');
-
-        $order_item_count = $request->order_item_count;
-        $order_item_total = 0;
-        for($i = 1; $i <= $order_item_count; $i++){
-            if(isset($_POST['item_id_'.$i]) && $_POST['item_id_'.$i]!=''){
-                if(isset($_POST['delete_item_'.$i]) && $_POST['delete_item_'.$i]!=''){
-                    $item_id = intval($_POST['item_id_'.$i]);
-                    // 在庫数更新
-                    $order_item_info = OrderItem::where('order_id', $order_id)
-                                                ->where('item_id', $item_id)->get();
-                    $old_order_item_quantity = $order_item_info->quantity;
-                    Item::where('id', $item_id)->increment('stock', $old_order_item_quantity_count);
-                    OrderItem::where('order_id', $order_id)->where('item_id', $item_id)
-                              ->delete();
-                } else {
-                    $item_id = intval($_POST['item_id_'.$i]);
-                    $order_item_price = ($_POST['price_'.$i] !='') ? intval($_POST['price_'.$i]) : 0;
-                    $order_item_quantity = ($_POST['quantity_'.$i] !='') ? intval($_POST['quantity_'.$i]) : 0;
-                    $order_item_total += $order_item_price * $order_item_quantity;
-                    $order_item_exist_count = OrderItem::where('order_id', $order_id)->where('item_id', $item_id)->count();
-                    
-                    if($order_item_exist_count > 0){
-                        // 在庫数更新
-                        $order_item_info = OrderItem::where('order_id', $order_id)
-                                                    ->where('item_id', $item_id)->get()->first();
-                        $old_order_item_quantity = $order_item_info->quantity;
-                        Item::where('id', $item_id)->increment('stock', $old_order_item_quantity);
-                        OrderItem::where('order_id', $order_id)->where('item_id', $item_id)
-                                 ->update([
-                                    'item_id'       => $item_id,
-                                    'price'         => $order_item_price,
-                                    'quantity'      => $order_item_quantity,
-                                    'updated_at'    => Carbon::now()
-                        ]);
-                        Item::where('id', $item_id)->decrement('stock', $order_item_quantity);
-                    } else {
-                        $new_order_item = new OrderItem();
-                        $new_order_item->order_id = $order_id;
-                        $new_order_item->item_id = $item_id;
-                        $new_order_item->price = $order_item_price;
-                        $new_order_item->quantity = $order_item_quantity;
-                        $new_order_item->save();
-                        // 在庫数更新
-                        Item::where('id', $item_id)->decrement('stock', $order_item_quantity);
-                    }
-                }
-            }
-        }
-
-        $change = $request->paid - $order_item_total;
-        Order::where('id', $order_id)
-             ->update([
-                'change' => $change
-        ]);
-
-        if($request->transactionTimeType == 'manual'){
-            $formatted_date = date('Y-m-d', strtotime($request->transactionDate));
-            $request->transaction_time = $formatted_date.' '.$request->transactionTime;
-            Order::where('id', $order_id)
-             ->update([
-                'created_at' => $request->transaction_time
-             ]);
-        }
-
-        Cashier::where('order_id', $order_id)
-                ->update([
-                'income_amount'     => $request->paid,
-                'payment_amount'    => $request->change,
-                'deduction_amount'  => $request->paid - $request->change,
-                'remarks'           => $request->remarks,
-                'updated_at'        => Carbon::now(),
-            ]);
-
-        //会社の現金を更新する
-        CompanyInfo::decrement('cash', $old_order_item_total);
-        CompanyInfo::increment('cash', $order_item_total);
-        
         $msg = "注文ID: \"$order_id\"を更新しました";
         return redirect('/admin/orders')->with('success_msg', $msg);
     }
@@ -309,27 +179,7 @@ class OrderController extends Controller
     {
         $order_id = $request->del_id;
 
-        DB::beginTransaction();
-        try {
-            $order = Order::find($order_id);
-            $order->delete();
-
-            // 在庫数更新
-            $order_items = OrderItem::where('order_id', $order_id)->get();
-            foreach($order_items as $order_item){
-                Item::where('id', $order_item->item_id)->increment('stock', $order_item->quantity);
-            }
-            OrderItem::where('order_id', $order_id)->delete();
-
-            Cashier::where('order_id', $order_id)->delete();
-
-            $order->save();
-            
-            DB::commit();
-        } catch (\PDOException $e){
-            DB::rollBack();
-            throw e;
-        }
+        $this->orderService->delete($order_id);
 
         $msg = "注文ID: \"$order_id\"を削除しました";
         if(isset($request->display_items) && isset($request->page)){
@@ -348,5 +198,21 @@ class OrderController extends Controller
         else{
             return redirect('/admin/orders')->with('success_msg', $msg);
         }
+    }
+
+    /**
+     * フォームの入力から、登録・更新する注文の項目を取り出す
+     *
+     * @param  \App\Http\Requests\OrderRequest  $request
+     * @return array
+     */
+    private function orderData(OrderRequest $request)
+    {
+        return [
+            'num_of_people' => $request->num_of_people,
+            'paid'          => $request->paid,
+            'change'        => $request->change,
+            'remarks'       => $request->remarks,
+        ];
     }
 }

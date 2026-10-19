@@ -32,13 +32,6 @@ class OrderTest extends TestCase
         $this->potato = factory(Item::class)->create(['name' => 'ポテト', 'price' => 150, 'stock' => 100]);
     }
 
-    protected function tearDown(): void
-    {
-        $_POST = [];
-
-        parent::tearDown();
-    }
-
     /**
      * 注文フォームの入力値を作成する
      *
@@ -64,22 +57,6 @@ class OrderTest extends TestCase
         }
 
         return array_merge($input, $overrides);
-    }
-
-    /**
-     * 注文フォームを送信する
-     *
-     * 注文明細はコントローラーが $_POST から直接読むため、$_POST にも同じ値を入れる.
-     *
-     * @param  string  $uri
-     * @param  array   $input
-     * @return \Illuminate\Foundation\Testing\TestResponse
-     */
-    private function postOrder(string $uri, array $input)
-    {
-        $_POST = $input;
-
-        return $this->post($uri, $input);
     }
 
     /**
@@ -128,7 +105,7 @@ class OrderTest extends TestCase
             ['paid' => '1000', 'change' => '250']
         );
 
-        $this->postOrder('/admin/orders/register', $input)
+        $this->post('/admin/orders/register', $input)
              ->assertRedirect('/admin/orders')
              ->assertSessionHas('success_msg');
 
@@ -166,7 +143,7 @@ class OrderTest extends TestCase
     {
         $input = $this->orderInput([[$this->cottonCandy, 300, 1]], ['multiple_create_flag' => '1']);
 
-        $this->postOrder('/admin/orders/register', $input)
+        $this->post('/admin/orders/register', $input)
              ->assertRedirect('/admin/orders/create');
     }
 
@@ -178,7 +155,7 @@ class OrderTest extends TestCase
             'transactionTime'     => '10:15:00',
         ]);
 
-        $this->postOrder('/admin/orders/register', $input);
+        $this->post('/admin/orders/register', $input);
 
         $this->assertSame('2019-11-30 10:15:00', Order::first()->created_at->format('Y-m-d H:i:s'));
     }
@@ -187,7 +164,7 @@ class OrderTest extends TestCase
     {
         $input = $this->orderInput([[$this->cottonCandy, 300, 1]], ['paid' => '0']);
 
-        $this->postOrder('/admin/orders/register', $input);
+        $this->post('/admin/orders/register', $input);
 
         $this->assertSame(1, Order::count());
         $this->assertSame(0, Cashier::count());
@@ -199,7 +176,7 @@ class OrderTest extends TestCase
         $input = $this->orderInput([[$this->cottonCandy, 300, 1]], ['paid' => '']);
 
         $this->from('/admin/orders/create')
-             ->postOrder('/admin/orders/register', $input)
+             ->post('/admin/orders/register', $input)
              ->assertRedirect('/admin/orders/create')
              ->assertSessionHasErrors(['paid' => '支払金額が指定されていません']);
 
@@ -211,7 +188,7 @@ class OrderTest extends TestCase
         $input = $this->orderInput([[$this->cottonCandy, 300, 1]], ['num_of_people' => '二人']);
 
         $this->from('/admin/orders/create')
-             ->postOrder('/admin/orders/register', $input)
+             ->post('/admin/orders/register', $input)
              ->assertSessionHasErrors(['num_of_people' => '人数に数字以外が試用されています']);
 
         $this->assertSame(0, Order::count());
@@ -219,7 +196,7 @@ class OrderTest extends TestCase
 
     public function testEditUpdatesQuantityStockCashierAndCash()
     {
-        $this->postOrder('/admin/orders/register', $this->orderInput(
+        $this->post('/admin/orders/register', $this->orderInput(
             [[$this->cottonCandy, 300, 1]],
             ['paid' => '500', 'change' => '200']
         ));
@@ -227,7 +204,7 @@ class OrderTest extends TestCase
         $this->assertSame(49, (int) $this->cottonCandy->fresh()->stock);
         $this->assertSame(32000 + 300, $this->companyCash());
 
-        $this->postOrder('/admin/orders/edit', $this->orderInput(
+        $this->post('/admin/orders/edit', $this->orderInput(
             [[$this->cottonCandy, 300, 3]],
             ['order_id' => (string) $order->id, 'paid' => '1000', 'change' => '100', 'remarks' => '変更後']
         ))
@@ -257,10 +234,10 @@ class OrderTest extends TestCase
 
     public function testEditAddsNewOrderItem()
     {
-        $this->postOrder('/admin/orders/register', $this->orderInput([[$this->cottonCandy, 300, 1]]));
+        $this->post('/admin/orders/register', $this->orderInput([[$this->cottonCandy, 300, 1]]));
         $order = Order::first();
 
-        $this->postOrder('/admin/orders/edit', $this->orderInput(
+        $this->post('/admin/orders/edit', $this->orderInput(
             [[$this->cottonCandy, 300, 1], [$this->potato, 150, 2]],
             ['order_id' => (string) $order->id]
         ));
@@ -274,11 +251,11 @@ class OrderTest extends TestCase
 
     public function testEditRejectsMissingPaid()
     {
-        $this->postOrder('/admin/orders/register', $this->orderInput([[$this->cottonCandy, 300, 1]], ['paid' => '500']));
+        $this->post('/admin/orders/register', $this->orderInput([[$this->cottonCandy, 300, 1]], ['paid' => '500']));
         $order = Order::first();
 
         $this->from('/admin/orders/detail/'.$order->id)
-             ->postOrder('/admin/orders/edit', $this->orderInput(
+             ->post('/admin/orders/edit', $this->orderInput(
                 [[$this->cottonCandy, 300, 3]],
                 ['order_id' => (string) $order->id, 'paid' => '']
              ))
@@ -291,13 +268,13 @@ class OrderTest extends TestCase
 
     public function testEditWithoutOrderIdRedirectsToIndex()
     {
-        $this->postOrder('/admin/orders/edit', $this->orderInput([[$this->cottonCandy, 300, 1]]))
+        $this->post('/admin/orders/edit', $this->orderInput([[$this->cottonCandy, 300, 1]]))
              ->assertRedirect('/admin/orders');
     }
 
     public function testDeleteSoftDeletesOrderAndRestoresStock()
     {
-        $this->postOrder('/admin/orders/register', $this->orderInput([[$this->cottonCandy, 300, 2]]));
+        $this->post('/admin/orders/register', $this->orderInput([[$this->cottonCandy, 300, 2]]));
         $order = Order::first();
         $this->assertSame(48, (int) $this->cottonCandy->fresh()->stock);
 
