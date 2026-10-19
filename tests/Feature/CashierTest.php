@@ -39,6 +39,33 @@ class CashierTest extends TestCase
              ->assertSee('材料費');
     }
 
+    public function testIndexUsesDisplayItemsAndPage()
+    {
+        factory(Cashier::class)->create(['description' => '一件目の記録']);
+        factory(Cashier::class)->create(['description' => '二件目の記録']);
+        factory(Cashier::class)->create(['description' => '三件目の記録']);
+
+        $this->get('/admin/cashier?display_items=2&page=2')
+             ->assertOk()
+             ->assertSee('三件目の記録')
+             ->assertDontSee('一件目の記録')
+             ->assertDontSee('二件目の記録');
+
+        $this->get('/admin/cashier?display_items=1')
+             ->assertOk()
+             ->assertSee('一件目の記録')
+             ->assertDontSee('二件目の記録');
+    }
+
+    public function testIndexShowsFirstPageWhenPageIsOutOfRange()
+    {
+        factory(Cashier::class)->create(['description' => '一件目の記録']);
+
+        $this->get('/admin/cashier?display_items=10&page=5')
+             ->assertOk()
+             ->assertSee('一件目の記録');
+    }
+
     public function testCreatePageIsShown()
     {
         $this->get('/admin/cashier/create')

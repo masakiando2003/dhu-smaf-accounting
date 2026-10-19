@@ -7,6 +7,7 @@ use App\Services\ItemService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Pagination\Paginator;
+use PDOException;
 use Tests\TestCase;
 
 class ItemServiceTest extends TestCase
@@ -160,6 +161,24 @@ class ItemServiceTest extends TestCase
         $this->service->delete($item->id);
 
         $this->assertSoftDeleted('items', ['id' => $item->id]);
+    }
+
+    public function testDeleteRollsBackAndRethrowsOriginalException()
+    {
+        $item = factory(Item::class)->create();
+        // 論理削除の後の保存で DB エラーが起きたことにする
+        Item::saving(function () {
+            throw new PDOException('テスト用の DB エラー');
+        });
+
+        try {
+            $this->service->delete($item->id);
+            $this->fail('例外が投げられませんでした');
+        } catch (PDOException $e) {
+            $this->assertSame('テスト用の DB エラー', $e->getMessage());
+        }
+
+        $this->assertDatabaseHas('items', ['id' => $item->id, 'deleted_at' => null]);
     }
 
     public function testDeleteThrowsWhenItemIsMissing()

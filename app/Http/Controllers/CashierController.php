@@ -28,9 +28,10 @@ class CashierController extends Controller
     /**
      * 現金出納帳の一覧を表示する
      *
+     * @param  \Illuminate\Http\Request  $request  display_items（1ページの表示件数）、page（ページ番号）
      * @return \Illuminate\View\View
      */
-    function index()
+    function index(Request $request)
     {
         if(isset($request->display_items)){
             $paginate = $request->display_items;

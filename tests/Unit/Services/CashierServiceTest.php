@@ -7,6 +7,7 @@ use App\Services\CashierService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PDOException;
 use Tests\TestCase;
 
 class CashierServiceTest extends TestCase
@@ -111,6 +112,24 @@ class CashierServiceTest extends TestCase
     {
         $this->expectException(ModelNotFoundException::class);
         $this->service->find(999999);
+    }
+
+    public function testDeleteRollsBackAndRethrowsOriginalException()
+    {
+        $cashier = factory(Cashier::class)->create();
+        // 論理削除の後の保存で DB エラーが起きたことにする
+        Cashier::saving(function () {
+            throw new PDOException('テスト用の DB エラー');
+        });
+
+        try {
+            $this->service->delete($cashier->id);
+            $this->fail('例外が投げられませんでした');
+        } catch (PDOException $e) {
+            $this->assertSame('テスト用の DB エラー', $e->getMessage());
+        }
+
+        $this->assertDatabaseHas('cashier', ['id' => $cashier->id, 'deleted_at' => null]);
     }
 
     public function testDeleteSoftDeletesRecord()

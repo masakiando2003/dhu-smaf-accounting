@@ -93,21 +93,19 @@ class CashierService
     /**
      * 出納記録を削除（論理削除）する
      *
+     * 途中でエラーが起きた場合は、それまでの変更をすべて元に戻して、元の例外を投げる.
+     *
      * @param  int  $id  出納記録ID
      * @return void
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException  出納記録が存在しない（削除済みを含む）場合
+     * @throws \Throwable  削除中に DB エラーなどが起きた場合
      */
     public function delete($id)
     {
-        DB::beginTransaction();
-        try {
+        DB::transaction(function () use ($id) {
             $cashier = Cashier::findOrFail($id);
             $cashier->delete();
             $cashier->save();
-            DB::commit();
-        } catch (\PDOException $e){
-            DB::rollBack();
-            throw e;
-        }
+        });
     }
 }

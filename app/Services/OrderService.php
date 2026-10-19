@@ -230,14 +230,16 @@ class OrderService
      *
      * 注文明細と出納記録も論理削除し、在庫数を戻す.
      *
+     * 途中でエラーが起きた場合は、それまでの変更をすべて元に戻して、元の例外を投げる.
+     *
      * @param  int  $order_id  注文ID
      * @return void
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException  注文が存在しない（削除済みを含む）場合
+     * @throws \Throwable  削除中に DB エラーなどが起きた場合
      */
     public function delete($order_id)
     {
-        DB::beginTransaction();
-        try {
+        DB::transaction(function () use ($order_id) {
             $order = Order::findOrFail($order_id);
             $order->delete();
 
@@ -251,11 +253,6 @@ class OrderService
             Cashier::where('order_id', $order_id)->delete();
 
             $order->save();
-
-            DB::commit();
-        } catch (\PDOException $e){
-            DB::rollBack();
-            throw e;
-        }
+        });
     }
 }

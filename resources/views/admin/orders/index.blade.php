@@ -72,7 +72,7 @@
       <div class="col-sm-3 text-right">
               {{-- paginate --}}
               @if($orders->hasPages())
-                  {!! $orders->appends($pagination_params)->links('pagination.default') !!}
+                  {!! $orders->appends($pagination_params)->links('pagination::bootstrap-4') !!}
               @else
                   <div class="g_pager">
                       <ul class="pagination text-right">
