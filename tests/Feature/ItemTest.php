@@ -122,6 +122,22 @@ class ItemTest extends TestCase
         $this->assertDatabaseHas('items', ['id' => $item->id, 'price' => 350, 'stock' => 40]);
     }
 
+    public function testEditRejectsNonNumericStock()
+    {
+        $item = factory(Item::class)->create(['name' => '綿菓子', 'stock' => 50]);
+
+        $this->from('/admin/items/detail/'.$item->id)
+             ->post('/admin/items/edit', $this->itemInput([
+                'item_id'  => $item->id,
+                'ori_name' => '綿菓子',
+                'stock'    => 'たくさん',
+             ]))
+             ->assertRedirect('/admin/items/detail/'.$item->id)
+             ->assertSessionHasErrors(['stock' => '在庫数に数字以外が試用されています']);
+
+        $this->assertSame(50, (int) $item->fresh()->stock);
+    }
+
     public function testEditWithoutItemIdRedirectsToIndex()
     {
         $this->post('/admin/items/edit', $this->itemInput())
