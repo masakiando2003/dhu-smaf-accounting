@@ -138,15 +138,72 @@ class OrderTest extends TestCase
 
         $this->get('/admin/orders/detail/'.$order->id)
              ->assertOk()
-             ->assertSeeInOrder(['注文ID', (string) $order->id, '注文時間', '自動採番', '入力', '2019/11/30 10:15:00']);
+             ->assertSeeInOrder(['注文ID', (string) $order->id, '注文時間', 'value="2019/11/30"', 'value="10:15:00"']);
+    }
+
+    public function testDetailPageEditsOrderTimeWithoutAutoOption()
+    {
+        $order = factory(Order::class)->create(['order_at' => '2019-11-30 10:15:00']);
+
+        $html = $this->get('/admin/orders/detail/'.$order->id)->assertOk()->getContent();
+
+        // 自動採番は選べず、注文時間の入力欄が最初から表示される
+        $this->assertStringNotContainsString('id="transaction_auto"', $html);
+        $this->assertStringNotContainsString('type="radio"', $html);
+        $this->assertStringContainsString('<input type="hidden" name="transactionTimeType" id="transaction_manual" value="manual" />', $html);
+        $this->assertRegExp('/<div id="time_input" class="col-sm-4" >/', $html);
     }
 
     public function testCreatePageShowsOrderTimeLabelWithoutOrderId()
     {
-        $this->get('/admin/orders/create')
+        $html = $this->get('/admin/orders/create')
+                     ->assertOk()
+                     ->assertSeeInOrder(['注文時間', '自動採番', '入力'])
+                     ->assertDontSee('注文ID')
+                     ->getContent();
+
+        // 新規作成では自動採番が選ばれていて、入力欄は隠れている
+        $this->assertRegExp('/id="transaction_auto" value="auto"\s+checked/', $html);
+        $this->assertStringContainsString('<div id="time_input" class="col-sm-4"  style="display:none;" >', $html);
+    }
+
+    public function testEditKeepsOrderTimeWhenNotChanged()
+    {
+        $this->post('/admin/orders/register', $this->orderInput([[$this->cottonCandy, 300, 1]], [
+            'transactionTimeType' => 'manual',
+            'transactionDate'     => '2019/11/30',
+            'transactionTime'     => '10:15:00',
+        ]));
+        $order = Order::first();
+
+        // 編集画面は、表示された注文時間をそのまま送る
+        $this->post('/admin/orders/edit', $this->orderInput([[$this->cottonCandy, 300, 2]], [
+            'order_id'            => (string) $order->id,
+            'transactionTimeType' => 'manual',
+            'transactionDate'     => '2019/11/30',
+            'transactionTime'     => '10:15:00',
+        ]))->assertRedirect('/admin/orders');
+
+        $this->assertSame('2019-11-30 10:15:00', $order->fresh()->order_at->format('Y-m-d H:i:s'));
+    }
+
+    public function testDetailPageKeepsEnteredOrderTimeAfterValidationError()
+    {
+        $order = factory(Order::class)->create(['order_at' => '2019-11-30 10:15:00']);
+
+        $this->from('/admin/orders/detail/'.$order->id)
+             ->followingRedirects()
+             ->post('/admin/orders/edit', $this->orderInput([[$this->cottonCandy, 300, 1]], [
+                'order_id'            => (string) $order->id,
+                'paid'                => '',
+                'transactionTimeType' => 'manual',
+                'transactionDate'     => '2019/12/01',
+                'transactionTime'     => '13:00:00',
+             ]))
              ->assertOk()
-             ->assertSeeInOrder(['注文時間', '自動採番'])
-             ->assertDontSee('注文ID');
+             ->assertSee('支払金額が指定されていません')
+             ->assertSee('value="2019/12/01"', false)
+             ->assertSee('value="13:00:00"', false);
     }
 
     public function testManualOrderTimeIsReflectedInReportTimePeriod()

@@ -77,7 +77,8 @@ routes/web.php → リクエストクラス（入力チェック） → コン�
 
 ### 注文日時（`orders.order_at`）
 - 注文日時は `order_at` に保存します。`created_at` は、レコードを作成した実際の日時です
-  - 注文の画面で日時を「入力」にした場合は、入力した日時が `order_at` に入ります。学園祭の後に当日の注文を入力するときに使います
+  - 新規作成では、注文時間を「自動採番」（現在日時）か「入力」から選べます。「入力」は、学園祭の後に当日の注文を登録するときに使います
+  - 編集では、注文時間の日付・時刻を直接変更します（「自動採番」は選べません）
   - 注文日時を編集しても、`created_at` は変わりません
 - 注文から作る「収入」の出納記録の取引日時は、`order_at` と同じにします
 - 注文レポートの日別・時間帯別の集計は、`order_at` を使います
@@ -224,6 +225,15 @@ nginx コンテナが、php-fpm のいるネットワークにつながってい
 nginx コンテナを作り直すと直ります。
 ```bash
 docker compose up -d --force-recreate --no-deps nginx
+```
+
+#### `php artisan` を実行すると `Return type of Illuminate\Support\Collection::offsetExists(...)` のエラーになる
+WSL など、ホスト側で直接 `php artisan` を実行しています。
+ホスト側の PHP が 8 以上だと、Laravel 6 は起動できません（このエラーは DB に接続する前に出るので、データは変わりません）。
+`php artisan` や `composer`・`vendor/bin/phpunit` は、PHP 7.4 の workspace コンテナの中で実行してください。
+```bash
+# laradock フォルダで実行
+docker compose exec -u laradock workspace php artisan migrate:fresh --seed
 ```
 
 #### `vendor/autoload.php` が見つからず 500 エラーになる

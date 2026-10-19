@@ -45,33 +45,41 @@
 
             <div class="row">
                 <div class="col-sm-2">注文時間</div>
-                <div class="col-sm-2">
-                    <input type="radio" name="transactionTimeType" id="transaction_auto" value="auto" checked
-                    onclick="ChangeTransactionType()" />自動採番
-                </div>
-                <div class="col-sm-2">
-                    <input type="radio" name="transactionTimeType" id="transaction_manual" value="manual"
-                    onclick="ChangeTransactionType()" />入力
-                </div>
-                <div id="time_label" class="col-sm-4" @if(!isset($orderDetail->id)) style="display:none;" @endif>
-                    <div>@isset($orderDetail->order_at){{ $orderDetail->order_at->format('Y/m/d H:i:s') ?? '' }}@endisset</div>
-                </div>
-                <div id="time_input" class="col-sm-4" style="display:none;">
+                @isset($orderDetail->id)
+                    {{-- 編集では、注文時間を直接変更する（自動採番は選べない） --}}
+                    <input type="hidden" name="transactionTimeType" id="transaction_manual" value="manual" />
+                @else
+                    <div class="col-sm-2">
+                        <label class="mb-0 font-weight-normal">
+                            <input type="radio" name="transactionTimeType" id="transaction_auto" value="auto"
+                            @if(old('transactionTimeType', 'auto') != 'manual') checked @endif
+                            onclick="ChangeTransactionType()" />自動採番
+                        </label>
+                    </div>
+                    <div class="col-sm-2">
+                        <label class="mb-0 font-weight-normal">
+                            <input type="radio" name="transactionTimeType" id="transaction_manual" value="manual"
+                            @if(old('transactionTimeType') == 'manual') checked @endif
+                            onclick="ChangeTransactionType()" />入力
+                        </label>
+                    </div>
+                @endisset
+                <div id="time_input" class="col-sm-4" @if(!isset($orderDetail->id) && old('transactionTimeType') != 'manual') style="display:none;" @endif>
                     <div class="row">
                         <div class="col-sm-6">
                             <input type="text" name="transactionDate" id="transactionDate"
                             class="form-control datepicker" placeholder="年/月/日"
-                            value="@if(isset($orderDetail->order_at)){{ $orderDetail->order_at->format('Y/m/d') ?? '' }}@else{{old('transactionDate') ?? ''}}@endif" />
+                            value="{{ old('transactionDate', isset($orderDetail->order_at) ? $orderDetail->order_at->format('Y/m/d') : '') }}" />
                         </div>
                         <div class="col-sm-6">
                             <input type="text" name="transactionTime" id="transactionTime"
                             class="form-control timepicker" placeholder="時間:分:秒"
-                            value="@if(isset($orderDetail->order_at)){{ $orderDetail->order_at->format('H:i:s') ?? '' }}@else{{old('transactionTime') ?? ''}}@endif" />
+                            value="{{ old('transactionTime', isset($orderDetail->order_at) ? $orderDetail->order_at->format('H:i:s') : '') }}" />
                         </div>
                     </div>
                 </div>
             </div>
-            
+
             <input type="hidden" name="num_of_people" id="num_of_people" value="1" />
 
             <!--スペースをあげる-->
@@ -224,17 +232,16 @@
     $('.datepicker').datepicker({ dateFormat: 'yy/mm/dd' });
     $('.timepicker').datetimepicker({ format: 'HH:mm:ss' });
 
+    // 新規作成で、注文時間の「自動採番」「入力」を切り替える
     function ChangeTransactionType()
     {
-        if(document.getElementById('transaction_auto').checked == true)
+        if(document.getElementById('transaction_manual').checked == true)
         {
-            document.getElementById('time_label').style.display = "";
-            document.getElementById('time_input').style.display = "none";
-        }
-        else if(document.getElementById('transaction_manual').checked == true)
-        {
-            document.getElementById('time_label').style.display = "none";
             document.getElementById('time_input').style.display = "";
+        }
+        else
+        {
+            document.getElementById('time_input').style.display = "none";
         }
     }
 
