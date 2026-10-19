@@ -3,13 +3,26 @@
 namespace App\Http\Controllers;
  
 use Illuminate\Http\Request;
-use App\Model\Item;
+use App\Services\ItemService;
  
 /**
  * 注文入力画面のアイテム検索（オートコンプリート）用の API を扱うコントローラー
  */
 class ItemAutoCompleteController extends Controller
 {
+    /**
+     * @var \App\Services\ItemService
+     */
+    private $itemService;
+
+    /**
+     * @param  \App\Services\ItemService  $itemService
+     */
+    public function __construct(ItemService $itemService)
+    {
+        $this->itemService = $itemService;
+    }
+
     /**
      * 名称の部分一致でアイテムを検索する
      *
@@ -20,7 +33,7 @@ class ItemAutoCompleteController extends Controller
     {
           $search = $request->get('term');
       
-          $result = Item::where('name', 'LIKE', '%'. $search. '%')->get();
+          $result = $this->itemService->searchByName($search);
  
           return response()->json($result);
             
@@ -36,7 +49,7 @@ class ItemAutoCompleteController extends Controller
     {
           $item_name = $request->get('itemName');
       
-          $result = Item::where('name', $item_name)->get();
+          $result = $this->itemService->findByExactName($item_name);
  
           return response()->json($result);
             

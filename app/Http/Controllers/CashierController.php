@@ -3,18 +3,28 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 use App\Http\Requests\CashierRequest;
-use App\Model\Cashier;
-
-use Carbon\Carbon;
+use App\Services\CashierService;
 
 /**
  * 現金出納帳の一覧・作成・編集・削除を扱うコントローラー
  */
 class CashierController extends Controller
 {
+    /**
+     * @var \App\Services\CashierService
+     */
+    private $cashierService;
+
+    /**
+     * @param  \App\Services\CashierService  $cashierService
+     */
+    public function __construct(CashierService $cashierService)
+    {
+        $this->cashierService = $cashierService;
+    }
+
     /**
      * 現金出納帳の一覧を表示する
      *
@@ -34,11 +44,10 @@ class CashierController extends Controller
             $page = 1;
         }
         $display_items = $paginate;
-        $query = Cashier::orderBy('id', 'asc');
-        $total_count = $query->count();
-        $cashier = $query->paginate($paginate);
-        if(count($cashier)<=0){
-            $cashier = $query->paginate($paginate, ['*'], 'page', 1);
+        $result = $this->cashierService->paginate($paginate);
+        $cashier = $result['records'];
+        $total_count = $result['total_count'];
+        if($result['is_first_page_fallback']){
             $page = 1;
         }
         $start_record = ($page - 1) * $paginate + 1;
@@ -82,7 +91,7 @@ class CashierController extends Controller
         $page['action'] = "/admin/cashier/edit/".$id;
         $page['submit'] = '更新';
 
-        $cashierDetail = Cashier::find($id);
+        $cashierDetail = $this->cashierService->find($id);
         $transaction_time_arr = explode(" ", $cashierDetail->transaction_time);
         $cashierDetail->transactionDate = date('Y/m/d', strtotime($transaction_time_arr[0]));
         $cashierDetail->transactionTime = $transaction_time_arr[1];
@@ -99,23 +108,10 @@ class CashierController extends Controller
      */
     function RegisterCashier(CashierRequest $request)
     {
-        $new_cashier = new Cashier();
-        if($request->transactionTimeType == 'manual')
-        {
-            $formatted_date = date('Y-m-d', strtotime($request->transactionDate));
-            $new_cashier->transaction_time = $formatted_date.' '.$request->transactionTime;
-        }
-        else
-        {
-            $new_cashier->transaction_time = Carbon::now();
-        }
-        $new_cashier->cashier_type = $request->type;
-        $new_cashier->description = $request->description;
-        $new_cashier->income_amount = $request->income_amount;
-        $new_cashier->payment_amount = $request->payment_amount;
-        $new_cashier->deduction_amount = $request->deduction_amount;
-        $new_cashier->remarks = $request->remarks;
-        $new_cashier->save();
+        $new_cashier = $this->cashierService->create(
+            $this->cashierData($request) + ['cashier_type' => $request->type],
+            $request->manualTransactionTime()
+        );
 
         $msg="新規出納記録(ID: ".$new_cashier->id.")を作成しました";
         return redirect('/admin/cashier')->with('success_msg', $msg);
@@ -136,24 +132,8 @@ class CashierController extends Controller
         }
 
         // 更新.
-        Cashier::where('id', $cashier_id)
-             ->update([
-                'description' => $request->description,
-                'income_amount' => $request->income_amount,
-                'payment_amount' => $request->payment_amount,
-                'deduction_amount' => $request->deduction_amount,
-                'remarks' => $request->remarks,
-             ]);
+        $this->cashierService->update($cashier_id, $this->cashierData($request), $request->manualTransactionTime());
 
-        if($request->transactionTimeType == 'manual'){
-            $formatted_date = date('Y-m-d', strtotime($request->transactionDate));
-            $request->transaction_time = $formatted_date.' '.$request->transactionTime;
-            Cashier::where('id', $cashier_id)
-             ->update([
-                'transaction_time' => $request->transaction_time
-             ]);
-        }
-        
         $msg = "出納記録(ID: ".$cashier_id.")を更新しました";
         return redirect('/admin/cashier')->with('success_msg', $msg);
     }
@@ -168,16 +148,7 @@ class CashierController extends Controller
     {
         $cashier_id = $request->del_id;
 
-        DB::beginTransaction();
-        try {
-            $cashier = Cashier::find($cashier_id);
-            $cashier->delete();
-            $cashier->save();
-            DB::commit();
-        } catch (\PDOException $e){
-            DB::rollBack();
-            throw e;
-        }
+        $this->cashierService->delete($cashier_id);
 
         $msg = "出納記録(ID: ".$cashier_id.")を削除しました";
         if(isset($request->display_items) && isset($request->page)){
@@ -196,5 +167,22 @@ class CashierController extends Controller
         else{
             return redirect('/admin/cashier')->with('success_msg', $msg);
         }
+    }
+
+    /**
+     * フォームの入力から、登録・更新する出納記録の項目を取り出す
+     *
+     * @param  \App\Http\Requests\CashierRequest  $request
+     * @return array
+     */
+    private function cashierData(CashierRequest $request)
+    {
+        return [
+            'description'      => $request->description,
+            'income_amount'    => $request->income_amount,
+            'payment_amount'   => $request->payment_amount,
+            'deduction_amount' => $request->deduction_amount,
+            'remarks'          => $request->remarks,
+        ];
     }
 }

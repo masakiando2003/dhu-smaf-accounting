@@ -2,11 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Model\CompanyInfo;
-use App\Model\CompanyMembers;
-use App\Model\Order;
-use App\Model\Item;
-use App\Model\Cashier;
+use App\Services\ReportService;
 
 /**
  * レポート（販売実績・損益計算書・貸借対照表など）を扱うコントローラー
@@ -14,16 +10,25 @@ use App\Model\Cashier;
 class ReportController extends Controller
 {
     /**
+     * @var \App\Services\ReportService
+     */
+    private $reportService;
+
+    /**
+     * @param  \App\Services\ReportService  $reportService
+     */
+    public function __construct(ReportService $reportService)
+    {
+        $this->reportService = $reportService;
+    }
+
+    /**
      * レポートを表示する
      *
      * @return \Illuminate\View\View
      */
     function index()
     {
-        $company_info = CompanyInfo::get()->first();
-        $company_members = CompanyMembers::get();
-
-        $orders = new Order();
         $sell_dates = ['2019-11-30','2019-12-01'];
         $time_periods = [
             '9:00 - 9:59', 
@@ -35,14 +40,11 @@ class ReportController extends Controller
             '15:00 - 15:59', 
             '16:00 - 16:59'
         ];
-        $items = Item::get();
         $profit = 0;
         $income = 0;
         $expenditure = 0;
-        $expenses = Cashier::where('cashier_type', 'payment')->get();
-        return view('admin/report/index', 
-                    compact('company_info', 'company_members', 'orders', 
-                            'items', 'sell_dates', 'time_periods', 
-                            'profit', 'income', 'expenditure', 'expenses'));
+        return view('admin/report/index',
+                    $this->reportService->getReportData() +
+                    compact('sell_dates', 'time_periods', 'profit', 'income', 'expenditure'));
     }
 }

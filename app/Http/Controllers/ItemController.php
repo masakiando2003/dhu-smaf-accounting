@@ -3,16 +3,28 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 use App\Http\Requests\ItemRequest;
-use App\Model\Item;
+use App\Services\ItemService;
 
 /**
  * アイテム（商品）の一覧・作成・編集・削除を扱うコントローラー
  */
 class ItemController extends Controller
 {
+    /**
+     * @var \App\Services\ItemService
+     */
+    private $itemService;
+
+    /**
+     * @param  \App\Services\ItemService  $itemService
+     */
+    public function __construct(ItemService $itemService)
+    {
+        $this->itemService = $itemService;
+    }
+
     /**
      * アイテム一覧を表示する
      *
@@ -33,11 +45,10 @@ class ItemController extends Controller
             $page = 1;
         }
         $display_items = $paginate;
-        $query = Item::orderBy('id', 'asc');
-        $total_count = $query->count();
-        $items = $query->paginate($paginate);
-        if(count($items)<=0){
-            $items = $query->paginate($paginate, ['*'], 'page', 1);
+        $result = $this->itemService->paginate($paginate);
+        $items = $result['records'];
+        $total_count = $result['total_count'];
+        if($result['is_first_page_fallback']){
             $page = 1;
         }
         $start_record = ($page - 1) * $paginate + 1;
@@ -80,7 +91,7 @@ class ItemController extends Controller
         $page['action'] = "/admin/items/edit";
         $page['submit'] = '更新';
 
-        $itemDetail = Item::find($id);
+        $itemDetail = $this->itemService->find($id);
         return view('admin/items/detail', compact('page', 'itemDetail'));
     }
 
@@ -94,7 +105,7 @@ class ItemController extends Controller
      */
     function RegisterItem(ItemRequest $request)
     {
-        if($this->CheckItemNameIsNotExist($request->name) == "false"){
+        if($this->itemService->existsByName($request->name)){
             $err_msg = "入力したアイテム名称\"$request->name\"は既にデータベース存在しています。";
             return redirect()
                        ->back()
@@ -102,17 +113,9 @@ class ItemController extends Controller
                        ->withErrors($err_msg);
         }
 
-        $new_item = new Item();
-        $new_item->name = $request->name;
-        $new_item->description = $request->description;
-        $new_item->price = $request->price;
-        $new_item->size = $request->size;
-        $new_item->weight = $request->weight;
-        $new_item->weight_unit = $request->weight_unit;
-        $new_item->init_stock = $request->init_stock;
-        $new_item->stock = $request->stock;
-        $new_item->remarks = $request->remarks;
-        $new_item->save();
+        $new_item = $this->itemService->create($this->itemData($request) + [
+            'remarks' => $request->remarks,
+        ]);
 
         $msg="新規アイテム\"$new_item->name\"を作成しました";
         return redirect('/admin/items')->with('success_msg', $msg);
@@ -145,19 +148,8 @@ class ItemController extends Controller
         }
 
         // 更新.
-        Item::where('id', $request->item_id)
-             ->update([
-                'name' => $request->name,
-                'description' => $request->description,
-                'price' => $request->price,
-                'size' => $request->size,
-                'weight' => $request->weight,
-                'weight_unit' => $request->weight_unit,
-                'init_stock' => $request->init_stock,
-                'stock' => $request->stock,
-             ]);
+        $this->itemService->update($request->item_id, $this->itemData($request));
 
-        
         $msg = "アイテム\"$request->name\"を更新しました";
         return redirect('/admin/items')->with('success_msg', $msg);
     }
@@ -170,18 +162,7 @@ class ItemController extends Controller
      */
     function DeleteItem(Request $request)
     {
-        $item_id = $request->del_id;
-
-        DB::beginTransaction();
-        try {
-            $item = Item::find($item_id);
-            $item->delete();
-            $item->save();
-            DB::commit();
-        } catch (\PDOException $e){
-            DB::rollBack();
-            throw e;
-        }
+        $this->itemService->delete($request->del_id);
 
         $msg = "アイテム\"$request->del_name\"を削除しました";
         if(isset($request->display_items) && isset($request->page)){
@@ -203,17 +184,22 @@ class ItemController extends Controller
     }
 
     /**
-     * 指定した名称のアイテムが存在しないかを確認する
+     * フォームの入力から、登録・更新するアイテムの項目を取り出す
      *
-     * @param  string  $name  アイテム名称
-     * @return string  存在しなければ "true"、存在すれば "false"（文字列）
+     * @param  \App\Http\Requests\ItemRequest  $request
+     * @return array
      */
-    function CheckItemNameIsNotExist($name)
+    private function itemData(ItemRequest $request)
     {
-        $item_count = Item::where('name', $name)->count();
-        if($item_count > 0){
-            return "false";
-        }
-        return "true";
+        return [
+            'name'        => $request->name,
+            'description' => $request->description,
+            'price'       => $request->price,
+            'size'        => $request->size,
+            'weight'      => $request->weight,
+            'weight_unit' => $request->weight_unit,
+            'init_stock'  => $request->init_stock,
+            'stock'       => $request->stock,
+        ];
     }
 }
