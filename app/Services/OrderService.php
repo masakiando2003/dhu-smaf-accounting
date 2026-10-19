@@ -143,8 +143,9 @@ class OrderService
      * 注文を更新する
      *
      * 注文明細の追加・変更・削除にあわせて在庫数を戻してから再計算し、
-     * 画面の明細にないアイテムの明細は削除する.
      * 出納記録と会社の現金も更新する.
+     *
+     * 画面の明細にないアイテム（行のアイテムを別のアイテムに変えた場合など）の明細は削除する.
      *
      * @param  int          $order_id     注文ID
      * @param  array        $data         num_of_people, paid, change, remarks
