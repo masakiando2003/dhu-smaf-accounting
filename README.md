@@ -49,6 +49,30 @@ npm install && npm run dev
 
 http://localhost にアクセスすると動作を確認できます。
 
+### トラブルシューティング
+#### nginx コンテナがポート80で起動できない
+`docker compose up` で次のエラーが出る場合は、ホスト側（WSL など）の nginx や Apache が先にポート80を使っています。
+```
+failed to bind host port 0.0.0.0:80/tcp: address already in use
+```
+
+ポート80を使っているプロセスは、次のコマンドで確認できます。
+```bash
+sudo ss -ltnp | grep ':80 '
+```
+
+ホスト側の nginx を使っていなければ、停止して自動起動もオフにします。
+```bash
+sudo systemctl stop nginx
+sudo systemctl disable nginx
+```
+
+ホスト側の nginx を止められない場合は、`laradock/.env` に次の1行を追加すると、Laradock の nginx のポートを変えられます。
+この場合のアクセス先は http://localhost:8081 になります。
+```
+NGINX_HOST_HTTP_PORT=8081
+```
+
 ### 参考
 - [Laradock環境構築](https://qiita.com/maejima_f/items/cb35327d0ae8c78a5bb9)
 - [Laradockでmysql設定](https://qiita.com/maejima_f/items/34cf3b8eb5ffbe256ad9)
