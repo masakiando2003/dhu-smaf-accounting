@@ -27,27 +27,60 @@ git clone https://github.com/masakiando2003/dhu-smaf-accounting.git
 git clone https://github.com/laradock/laradock.git
 cd laradock
 cp .env.example .env
-# .env の APP_CODE_PATH_HOST を ../dhu-smaf-accounting/ に変更
 ```
 
-### 2. コンテナの起動
+`laradock/.env` の次の2か所を変更します。
+このアプリは Laravel 6 なので、PHP 8 では動きません。必ず PHP 7.4 にしてください。
+```
+APP_CODE_PATH_HOST=../dhu-smaf-accounting/
+PHP_VERSION=7.4
+```
+
+### 2. php-fpm の Dockerfile の修正
+PHP 7.4 の php-fpm のベースイメージは Debian 11（bullseye）です。
+サポートが終了しているため、そのままではパッケージのダウンロードが 404 になり、ビルドに失敗します。
+`laradock/php-fpm/Dockerfile` の `LABEL maintainer=...` の行の後に、次の処理を追加してください。
+パッケージの取得先が Debian のアーカイブに切り替わります。
+```dockerfile
+# Debian 11 (bullseye) はサポート終了のため、パッケージ取得先をアーカイブに切り替える
+RUN if grep -q bullseye /etc/os-release; then \
+      printf '%s\n' \
+        'deb http://archive.debian.org/debian bullseye main' \
+        'deb http://archive.debian.org/debian-security bullseye-security main' \
+        'deb http://archive.debian.org/debian bullseye-updates main' \
+        > /etc/apt/sources.list; \
+      rm -f /etc/apt/sources.list.d/*; \
+    fi
+```
+
+### 3. コンテナのビルドと起動
 ```bash
+docker compose build workspace php-fpm
 docker compose up -d nginx mysql
 ```
 
-### 3. Laravel の初期設定
+### 4. Laravel の初期設定
 ```bash
-docker compose exec workspace bash
+docker compose exec -u laradock workspace bash
 # 以下はコンテナ内（/var/www）で実行
 composer install
 cp .env.example .env
 php artisan key:generate
-# .env の DB_HOST=mysql、DB_DATABASE / DB_USERNAME / DB_PASSWORD を Laradock の設定に合わせる
 php artisan migrate --seed
-npm install && npm run dev
 ```
 
-http://localhost にアクセスすると動作を確認できます。
+`php artisan migrate` の前に、`.env` の DB 設定を Laradock の初期値に合わせてください。
+```
+DB_HOST=mysql
+DB_DATABASE=default
+DB_USERNAME=default
+DB_PASSWORD=secret
+```
+
+ビルド済みの CSS・JS（`public/css/app.css`・`public/js/app.js`）はリポジトリに含まれています。
+そのため、画面を表示するだけなら `npm install` や `npm run dev` は不要です。
+
+http://localhost にアクセスすると、管理画面のダッシュボードが表示されます。
 
 ### トラブルシューティング
 #### nginx コンテナがポート80で起動できない
@@ -72,6 +105,22 @@ sudo systemctl disable nginx
 ```
 NGINX_HOST_HTTP_PORT=8081
 ```
+
+#### nginx コンテナが再起動を繰り返す
+`docker ps` で nginx が `Restarting` のままになり、`docker logs laradock-nginx-1` に次のエラーが出る場合があります。
+```
+nginx: [emerg] host not found in upstream "php-fpm:9000"
+```
+nginx コンテナが、php-fpm のいるネットワークにつながっていない状態です。
+ポート80のエラーなどで一度起動に失敗すると、この状態になることがあります。
+nginx コンテナを作り直すと直ります。
+```bash
+docker compose up -d --force-recreate --no-deps nginx
+```
+
+#### `vendor/autoload.php` が見つからず 500 エラーになる
+「4. Laravel の初期設定」の `composer install` がまだ済んでいません。
+workspace コンテナに入って実行してください。
 
 ### 参考
 - [Laradock環境構築](https://qiita.com/maejima_f/items/cb35327d0ae8c78a5bb9)
