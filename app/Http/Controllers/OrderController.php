@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
+use App\Http\Requests\OrderRequest;
 use App\Model\Item;
 use App\Model\Order;
 use App\Model\OrderItem;
@@ -102,51 +102,16 @@ class OrderController extends Controller
     }
 
     /**
-     * 注文の入力チェックのエラーメッセージを返す
-     *
-     * @return array<string, string>
-     */
-    function GetOrderValidationErrorMessage() {
-        return [
-            "num_of_people.required"       => "人数が指定されていません",
-            "num_of_people.regex"          => "人数に数字以外が試用されています",
-            "paid.required"                => "支払金額が指定されていません",
-            "paid.regex"                   => "支払金額に数字以外が試用されています",
-        ];
-      }
-  
-      /**
-       * 注文の入力チェック用のバリデーターを作成する
-       *
-       * @param  \Illuminate\Http\Request  $request
-       * @return \Illuminate\Contracts\Validation\Validator
-       */
-      function GetOrderValidator(Request $request) {
-        return Validator::make($request->all(), [
-                    'num_of_people'         => 'required|regex:/^[0-9]+$/',
-                    'paid'         => 'required|regex:/^[0-9]+$/',
-                ], $this->GetOrderValidationErrorMessage());
-      }
-
-    /**
      * 注文を新規登録する
      *
      * 注文明細の登録、在庫数の減算、「収入」の出納記録の作成、会社の現金の加算もあわせて行う.
      * 注文明細は item_id_N / price_N / quantity_N（N は 1〜order_item_count）で受け取る.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Http\Requests\OrderRequest  $request
      * @return \Illuminate\Http\RedirectResponse
      */
-    function RegisterOrder(Request $request)
+    function RegisterOrder(OrderRequest $request)
     {
-        $validator = $this->GetOrderValidator($request);
-        if ($validator->fails()) {
-          return redirect()
-                 ->back()
-                 ->withInput()
-                 ->withErrors($validator);
-        }
-
         $new_order = new Order();
         $new_order->num_of_people = $request->num_of_people;
         $new_order->paid = $request->paid;
@@ -227,10 +192,10 @@ class OrderController extends Controller
      * 注文明細の追加・変更・削除にあわせて在庫数を戻してから再計算し、
      * 出納記録と会社の現金も更新する.
      *
-     * @param  \Illuminate\Http\Request  $request  order_id（更新する注文ID）ほか
+     * @param  \App\Http\Requests\OrderRequest  $request  order_id（更新する注文ID）ほか
      * @return \Illuminate\Http\RedirectResponse
      */
-    function EditOrder(Request $request)
+    function EditOrder(OrderRequest $request)
     {
         if($request->order_id == null){
             return redirect('/admin/orders');
@@ -238,14 +203,6 @@ class OrderController extends Controller
         }
 
         $order_id = $request->order_id;
-
-        $validator = $this->GetOrderValidator($request);
-        if ($validator->fails()) {
-          return redirect()
-                 ->back()
-                 ->withInput()
-                 ->withErrors($validator);
-        }
 
         // 更新.
         Order::where('id', $order_id)

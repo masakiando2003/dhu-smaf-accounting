@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
+use App\Http\Requests\CashierRequest;
 use App\Model\Cashier;
 
 use Carbon\Carbon;
@@ -88,50 +88,17 @@ class CashierController extends Controller
         $cashierDetail->transactionTime = $transaction_time_arr[1];
         return view('admin/cashier/detail', compact('page', 'cashierDetail'));
     }
-
-    /**
-     * 出納記録の入力チェックのエラーメッセージを返す
-     *
-     * @return array<string, string>
-     */
-    function GetCashierValidationErrorMessage() {
-        return [
-            "income_amount.regex"                   => "収入金額に数字以外が試用されています",
-            "payment_amount.regex"                  => "支払金額に数字以外が試用されています",
-        ];
-    }
-  
-    /**
-     * 出納記録の入力チェック用のバリデーターを作成する
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Contracts\Validation\Validator
-     */
-    function GetCashierValidator(Request $request) {
-        return Validator::make($request->all(), [
-                    'income_amount'         => 'required|regex:/^[0-9]+$/',
-                    'payment_amount'        => 'required|regex:/^[0-9]+$/',
-                ], $this->GetCashierValidationErrorMessage());
-    }
       
     /**
      * 出納記録を新規登録する
      *
      * transactionTimeType が "manual" のときは入力された日時、それ以外は現在日時で登録する.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Http\Requests\CashierRequest  $request
      * @return \Illuminate\Http\RedirectResponse
      */
-    function RegisterCashier(Request $request)
+    function RegisterCashier(CashierRequest $request)
     {
-        $validator = $this->GetCashierValidator($request);
-        if ($validator->fails()) {
-          return redirect()
-                 ->back()
-                 ->withInput()
-                 ->withErrors($validator);
-        }
-
         $new_cashier = new Cashier();
         if($request->transactionTimeType == 'manual')
         {
@@ -157,23 +124,15 @@ class CashierController extends Controller
     /**
      * 出納記録を更新する
      *
-     * @param  \Illuminate\Http\Request  $request  cashier_id（更新する出納記録ID）ほか
+     * @param  \App\Http\Requests\CashierRequest  $request  cashier_id（更新する出納記録ID）ほか
      * @return \Illuminate\Http\RedirectResponse
      */
-    function EditCashier(Request $request)
+    function EditCashier(CashierRequest $request)
     {
         $cashier_id = $request->cashier_id;
 
         if($cashier_id == NULL){
             return redirect('/admin/cashier');
-        }
-
-        $validator = $this->GetCashierValidator($request);
-        if ($validator->fails()) {
-          return redirect()
-                 ->back()
-                 ->withInput()
-                 ->withErrors($validator);
         }
 
         // 更新.

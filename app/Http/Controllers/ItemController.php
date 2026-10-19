@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
+use App\Http\Requests\ItemRequest;
 use App\Model\Item;
 
 /**
@@ -85,59 +85,15 @@ class ItemController extends Controller
     }
 
     /**
-     * アイテムの入力チェックのエラーメッセージを返す
-     *
-     * @return array<string, string>
-     */
-    function GetItemValidationErrorMessage() {
-        return [
-            "name.required"                 => "アイテム名称が指定されていません",
-            "name.max"                      => "アイテム名称が255字を超えています",
-            "price.required"                => "価格が指定されていません",
-            "price.regex"                   => "価格に数字以外が試用されています",
-            "weight.required"               => "重量が指定されていません",
-            "weight.regex"                  => "重量に数字以外が試用されています",
-            "init_stock.required"           => "初期在庫数が指定されていません",
-            "init_stock.regex"              => "初期在庫数に数字以外が試用されています",
-            "stock.required"                => "在庫数が指定されていません",
-            "stock.regex"                   => "在庫数に数字以外が試用されています",
-        ];
-      }
-  
-      /**
-       * アイテムの入力チェック用のバリデーターを作成する
-       *
-       * @param  \Illuminate\Http\Request  $request
-       * @return \Illuminate\Contracts\Validation\Validator
-       */
-      function GetItemValidator(Request $request) {
-        return Validator::make($request->all(), [
-                    'name'          => 'required|max:255',
-                    'price'         => 'required|regex:/^[0-9]+$/',
-                    'weight'        => 'required|regex:/^[0-9]+$/',
-                    'init_stock'    => 'required|regex:/^[0-9]+$/',
-                    'stock'         => 'required|regex:/^[0-9]+$/',
-                ], $this->GetItemValidationErrorMessage());
-      }
-
-    /**
      * アイテムを新規登録する
      *
      * 同じ名称のアイテムがすでにある場合は、エラーにして入力画面に戻す.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Http\Requests\ItemRequest  $request
      * @return \Illuminate\Http\RedirectResponse
      */
-    function RegisterItem(Request $request)
+    function RegisterItem(ItemRequest $request)
     {
-        $validator = $this->GetItemValidator($request);
-        if ($validator->fails()) {
-          return redirect()
-                 ->back()
-                 ->withInput()
-                 ->withErrors($validator);
-        }
-
         if($this->CheckItemNameIsNotExist($request->name) == "false"){
             $err_msg = "入力したアイテム名称\"$request->name\"は既にデータベース存在しています。";
             return redirect()
@@ -165,22 +121,14 @@ class ItemController extends Controller
     /**
      * アイテムを更新する
      *
-     * @param  \Illuminate\Http\Request  $request  item_id（更新するアイテムID）、ori_name（変更前の名称）ほか
+     * @param  \App\Http\Requests\ItemRequest  $request  item_id（更新するアイテムID）、ori_name（変更前の名称）ほか
      * @return \Illuminate\Http\RedirectResponse
      */
-    function EditItem(Request $request)
+    function EditItem(ItemRequest $request)
     {
         if($request->item_id === null){
             return redirect('/admin/items');
             exit;
-        }
-
-        $validator = $this->GetItemValidator($request);
-        if ($validator->fails()) {
-          return redirect()
-                 ->back()
-                 ->withInput()
-                 ->withErrors($validator);
         }
 
         // 重複チェック.

@@ -129,6 +129,21 @@ class CashierTest extends TestCase
         ]);
     }
 
+    public function testEditRejectsNonNumericAmount()
+    {
+        $cashier = factory(Cashier::class)->create(['income_amount' => 0]);
+
+        $this->from('/admin/cashier/detail/'.$cashier->id)
+             ->post('/admin/cashier/edit/'.$cashier->id, $this->cashierInput([
+                'cashier_id'    => (string) $cashier->id,
+                'income_amount' => '千',
+             ]))
+             ->assertRedirect('/admin/cashier/detail/'.$cashier->id)
+             ->assertSessionHasErrors(['income_amount' => '収入金額に数字以外が試用されています']);
+
+        $this->assertSame(0, (int) $cashier->fresh()->income_amount);
+    }
+
     public function testEditWithManualTimeUpdatesTransactionTime()
     {
         $cashier = factory(Cashier::class)->create(['transaction_time' => '2019-11-30 10:15:00']);

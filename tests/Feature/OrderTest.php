@@ -272,6 +272,23 @@ class OrderTest extends TestCase
         $this->assertSame(98, (int) $this->potato->fresh()->stock);
     }
 
+    public function testEditRejectsMissingPaid()
+    {
+        $this->postOrder('/admin/orders/register', $this->orderInput([[$this->cottonCandy, 300, 1]], ['paid' => '500']));
+        $order = Order::first();
+
+        $this->from('/admin/orders/detail/'.$order->id)
+             ->postOrder('/admin/orders/edit', $this->orderInput(
+                [[$this->cottonCandy, 300, 3]],
+                ['order_id' => (string) $order->id, 'paid' => '']
+             ))
+             ->assertRedirect('/admin/orders/detail/'.$order->id)
+             ->assertSessionHasErrors(['paid' => '支払金額が指定されていません']);
+
+        $this->assertSame(500, (int) $order->fresh()->paid);
+        $this->assertSame(49, (int) $this->cottonCandy->fresh()->stock);
+    }
+
     public function testEditWithoutOrderIdRedirectsToIndex()
     {
         $this->postOrder('/admin/orders/edit', $this->orderInput([[$this->cottonCandy, 300, 1]]))
