@@ -192,6 +192,7 @@ vendor/bin/phpunit --filter testDeleteSoftDeletes   # テスト名で絞り込�
 - 手元の Laradock と同じく、PHP 7.4・MySQL 8.4 で実行します
 - テスト専用のデータベース `smaf_testing` は、MySQL のサービスコンテナで用意します
 - 結果は、プルリクエストの「Checks」タブや、リポジトリの「Actions」タブで確認できます
+- `master` はブランチ保護で `phpunit` のチェックを必須にしています。テストが失敗中・実行中のプルリクエストは、管理者でもマージできません
 
 テストを書くときのポイントです。
 - データの作成には、`database/factories/ModelFactory.php` のファクトリーを使います（`factory(Item::class)->create()`）
