@@ -89,6 +89,21 @@ http://localhost にアクセスすると、管理画面のダッシュボード
 php artisan db:seed --class=TestDataSeeder
 ```
 
+### テストの実行
+テストは、開発用とは別のテスト専用データベース `smaf_testing` を使います。
+テストのたびにデータベースを作り直すため、開発用のデータベースは使いません。
+誤って開発用のデータベースにつながっている場合は、データを消さないようにテストが止まります。
+
+初回だけ、`laradock` フォルダでテスト用のデータベースを作成します。
+```bash
+docker compose exec mysql mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS smaf_testing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL PRIVILEGES ON smaf_testing.* TO 'default'@'%';"
+```
+
+その後、workspace コンテナ内でテストを実行します。
+```bash
+vendor/bin/phpunit
+```
+
 ### トラブルシューティング
 #### nginx コンテナがポート80で起動できない
 `docker compose up` で次のエラーが出る場合は、ホスト側（WSL など）の nginx や Apache が先にポート80を使っています。
