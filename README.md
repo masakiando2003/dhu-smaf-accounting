@@ -227,6 +227,15 @@ nginx コンテナを作り直すと直ります。
 docker compose up -d --force-recreate --no-deps nginx
 ```
 
+#### `php artisan` を実行すると `Return type of Illuminate\Support\Collection::offsetExists(...)` のエラーになる
+WSL など、ホスト側で直接 `php artisan` を実行しています。
+ホスト側の PHP が 8 以上だと、Laravel 6 は起動できません（このエラーは DB に接続する前に出るので、データは変わりません）。
+`php artisan` や `composer`・`vendor/bin/phpunit` は、PHP 7.4 の workspace コンテナの中で実行してください。
+```bash
+# laradock フォルダで実行
+docker compose exec -u laradock workspace php artisan migrate:fresh --seed
+```
+
 #### `vendor/autoload.php` が見つからず 500 エラーになる
 「4. Laravel の初期設定」の `composer install` がまだ済んでいません。
 workspace コンテナに入って実行してください。
