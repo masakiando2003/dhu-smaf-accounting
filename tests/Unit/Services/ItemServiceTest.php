@@ -106,28 +106,6 @@ class ItemServiceTest extends TestCase
         $this->assertFalse($this->service->existsByName('ポテト'));
     }
 
-    public function testSearchByNameMatchesPartially()
-    {
-        factory(Item::class)->create(['name' => '綿菓子']);
-        factory(Item::class)->create(['name' => '焼き菓子']);
-        factory(Item::class)->create(['name' => 'ポテト']);
-
-        $names = $this->service->searchByName('菓子')->pluck('name')->sort()->values()->all();
-
-        $this->assertSame(['焼き菓子', '綿菓子'], $names);
-    }
-
-    public function testFindByExactNameDoesNotMatchPartially()
-    {
-        factory(Item::class)->create(['name' => '綿菓子']);
-        factory(Item::class)->create(['name' => '綿菓子（大）']);
-
-        $result = $this->service->findByExactName('綿菓子');
-
-        $this->assertCount(1, $result);
-        $this->assertSame('綿菓子', $result->first()->name);
-    }
-
     public function testCreateSavesAllFields()
     {
         $item = $this->service->create($this->itemData());

@@ -33,7 +33,18 @@
                        value="{{ $orderDetail->id ?? '' }}" />
             @endisset
 
+            @isset($orderDetail->id)
             <div class="row">
+                <div class="col-sm-2">注文ID</div>
+                <div class="col-sm-4" id="order_id_label">{{ $orderDetail->id }}</div>
+            </div>
+
+            <!--スペースをあげる-->
+            <div class="row">&nbsp;</div>
+            @endisset
+
+            <div class="row">
+                <div class="col-sm-2">注文時間</div>
                 <div class="col-sm-2">
                     <input type="radio" name="transactionTimeType" id="transaction_auto" value="auto" checked
                     onclick="ChangeTransactionType()" />自動採番
@@ -61,17 +72,6 @@
                 </div>
             </div>
             
-            <!--スペースをあげる-->
-            <!--<div class="row">&nbsp;</div>-->
-
-            <!--<div class="row">
-                <div class="col-sm-2">人数<span class="required">*</span></div>
-                <div class="col-sm-4">
-                    <input type="text" name="num_of_people" id="num_of_people"
-                       class="form-control" placeholder="人数"
-                       value="@if(isset($orderDetail->num_of_people)){{ $orderDetail->num_of_people ?? '' }}@else{{old('num_of_people') ?? ''}}@endif" />
-                </div>
-            </div>-->
             <input type="hidden" name="num_of_people" id="num_of_people" value="1" />
 
             <!--スペースをあげる-->
@@ -321,7 +321,6 @@
                 document.getElementById('change').value = 0;
             }
         } else {
-            //alert('支払金額に数字を入力してください。');
             document.getElementById('paid').value = '';
             document.getElementById('change').value = 0;
         }

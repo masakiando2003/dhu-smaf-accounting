@@ -65,6 +65,12 @@ class RouteConstraintTest extends TestCase
         $this->assertSame('材料費', $cashier->fresh()->description);
     }
 
+    public function testRemovedAutocompleteApisAreNotFound()
+    {
+        $this->getJson('/item_autocomplete?term=a')->assertNotFound();
+        $this->getJson('/item_getprice?itemName=a')->assertNotFound();
+    }
+
     public function testDetailRejectsNonIntegerIds()
     {
         foreach (['abc', '1.5', '-1'] as $id) {
