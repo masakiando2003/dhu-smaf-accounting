@@ -147,6 +147,8 @@ class OrderService
      * 注文明細の追加・変更・削除にあわせて在庫数を戻してから再計算し、
      * 出納記録と会社の現金も更新する. 注文日時を変えた場合は、出納記録の取引日時も同じにする.
      *
+     * 画面の明細にないアイテム（行のアイテムを別のアイテムに変えた場合など）の明細は削除する.
+     *
      * @param  int          $order_id     注文ID
      * @param  array        $data         num_of_people, paid, change, remarks
      * @param  array        $order_items  注文明細（\App\Http\Requests\OrderRequest::orderItems() の形）
@@ -212,6 +214,20 @@ class OrderService
                     Item::where('id', $item_id)->decrement('stock', $order_item_quantity);
                 }
             }
+        }
+
+        // 画面の明細にないアイテム（行のアイテムを別のアイテムに変えた場合など）の明細を削除し、在庫を戻す
+        $kept_item_ids = [];
+        foreach($order_items as $order_item){
+            if(!$order_item['delete']){
+                $kept_item_ids[] = intval($order_item['item_id']);
+            }
+        }
+        $removed_order_items = OrderItem::where('order_id', $order_id)
+                                        ->whereNotIn('item_id', $kept_item_ids)->get();
+        foreach($removed_order_items as $removed_order_item){
+            Item::where('id', $removed_order_item->item_id)->increment('stock', $removed_order_item->quantity);
+            $removed_order_item->delete();
         }
 
         $change = $data['paid'] - $order_item_total;

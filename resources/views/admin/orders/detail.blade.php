@@ -94,52 +94,34 @@
                 </tr>
             </thead>
             <tbody id="order-item-list">
-                @if(isset($orderDetail->id) && isset($orderItemDetail) && count($orderItemDetail) > 0)
-                    @foreach($orderItemDetail as $orderItem)
-                        @php
-                            $count = 1;
-                        @endphp
-                        <tr id="order_item_row_{{ $count }}">
-                            <td>
-                                <input type="hidden" name="item_id_{{ $count }}" id="item_id_{{ $count }}" value="{{ $orderItem->item_id }}" />
-                                <!--<input type="text" class="form-control item_search" name="item_name_{{ $count }}" id="item_name_{{ $count }}" value="{{ $orderItem->GetItemName($orderItem->item_id) ?? '' }}" placeholder='少なくとも一つ文字を入力してください' onchange="AutoFillQuantity('{{ $count }}');GetItemIdAndPrice('{{ $count }}');" />-->
-                                <select class="form-control" name="item_name_{{ $count }}" id="item_name_{{ $count }}" onchange="AutoFillQuantity('{{ $count }}');GetItemIdAndPrice('{{ $count }}');PaidFocus();">
-                                @foreach($items as $item)
-                                    <option value="{{ $item->name }}">{{ $item->name }}</option>
-                                @endforeach
-                                </select>
-                            </td>
-                            <td><input type="text" class="form-control" name="price_{{ $count }}" id="price_{{ $count }}" value="{{ $orderItem->price ?? '' }}" onchange="OrderItemValidation(this.id);CalculateOrderTotal()" placeholder="数字" /></td>
-                            <td><input type="text" class="form-control" name="quantity_{{ $count }}" id="quantity_{{ $count }}" value="{{ $orderItem->quantity ?? '' }}" onchange="OrderItemValidation(this.id);CalculateOrderTotal()" placeholder="数字" /></td>
-                            <td><input type="checkbox" class="form-control" name="delete_item_{{ $count }}" id="delete_item_{{ $count }}" /></td>
-                            <td><button class="btn btn-primary" name="btnClear" id="btnClear" onclick="ClearFilledItem('{{ $count }}')">クリア</button></td>
-                        </tr>
-                        <input type="hidden" name="order_item_count" id="order_item_count" value="{{ count($orderItemDetail) }}" />
-                        @php
-                            $count++;
-                        @endphp
-                    @endforeach
-                @else
-                    <tr id="order_item_row_1">
+                @php
+                    // 既存の明細がなければ、空の行を1行表示する
+                    $rows = (isset($orderDetail->id) && isset($orderItemDetail) && count($orderItemDetail) > 0)
+                            ? $orderItemDetail : [null];
+                @endphp
+                @foreach($rows as $index => $orderItem)
+                    @php
+                        $count = $index + 1;
+                    @endphp
+                    <tr id="order_item_row_{{ $count }}">
                         <td>
-                            <input type="hidden" name="item_id_1" id="item_id_1" />
-                            <!--<input type="text" class="form-control item_search" name="item_name_1" id="item_name_1" placeholder='少なくとも一つ文字を入力してください' onchange="AutoFillQuantity('1');GetItemIdAndPrice('1');" />-->
-                            <select class="form-control" name="item_name_1" id="item_name_1" onchange="AutoFillQuantity('1');GetItemIdAndPrice('1');PaidFocus();">
-                            <option value="">選択してください</option>
-                            @foreach($items as $item)
-                                <option value="{{ $item->name }}">{{ $item->name }}</option>
-                            @endforeach
+                            <input type="hidden" name="item_id_{{ $count }}" id="item_id_{{ $count }}" value="{{ $orderItem->item_id ?? '' }}" />
+                            <select class="form-control item_select" id="item_select_{{ $count }}" onchange="SelectItem('{{ $count }}');">
+                                <option value="">選択してください</option>
+                                @foreach($items as $item)
+                                    <option value="{{ $item->id }}" data-price="{{ $item->price }}" @if(isset($orderItem) && $item->id == $orderItem->item_id) selected @endif>{{ $item->name }}</option>
+                                @endforeach
                             </select>
                         </td>
-                        <td><input type="text" class="form-control" name="price_1" id="price_1" onchange="OrderItemValidation(this.id);CalculateOrderTotal()" placeholder="数字" /></td>
-                        <td><input type="text" class="form-control" name="quantity_1" id="quantity_1" onchange="OrderItemValidation(this.id);CalculateOrderTotal()" placeholder="数字" /></td>
-                        <td><input type="checkbox" class="form-control" name="delete_item_1" id="delete_item_1" /></td>
-                        <td><button class="btn btn-primary" name="btnClear" id="btnClear" onclick="ClearFilledItem('1')">クリア</button></td>
+                        <td><input type="text" class="form-control" name="price_{{ $count }}" id="price_{{ $count }}" value="{{ $orderItem->price ?? '' }}" onchange="OrderItemValidation(this.id);CalculateOrderTotal()" placeholder="数字" /></td>
+                        <td><input type="text" class="form-control" name="quantity_{{ $count }}" id="quantity_{{ $count }}" value="{{ $orderItem->quantity ?? '' }}" onchange="OrderItemValidation(this.id);CalculateOrderTotal()" placeholder="数字" /></td>
+                        <td><input type="checkbox" class="form-control" name="delete_item_{{ $count }}" id="delete_item_{{ $count }}" /></td>
+                        <td><button type="button" class="btn btn-primary" onclick="ClearFilledItem('{{ $count }}')">クリア</button></td>
                     </tr>
-                    <input type="hidden" name="order_item_count" id="order_item_count" value="1" />
-                @endif
+                @endforeach
             </tbody>
             </table>
+            <input type="hidden" name="order_item_count" id="order_item_count" value="{{ count($rows) }}" />
 
             <div class="row">
                 <div class="col-sm-2">合計金額</div>
@@ -256,25 +238,6 @@
         }
     }
 
-    $( ".item_search" ).autocomplete({
-        source: function(request, response) {
-            $.ajax({
-                url: "{{url('item_autocomplete')}}",
-                data: {
-                        term : request.term
-                },
-                dataType: "json",
-                success: function(data){
-                    var resp = $.map(data,function(obj){
-                        return obj.name;
-                    }); 
-                    response(resp);
-                },
-            });
-        },
-        minLength: 0
-    });
-
     function PaidFocus()
     {
         document.getElementById('paid').focus();
@@ -292,32 +255,47 @@
         }
     }
 
-    function GetItemIdAndPrice(index){
-        const item_name = document.getElementById('item_name_'+index).value;
-        $.ajax({
-            url: "{{url('item_getprice')}}",
-            data: {
-                itemName : item_name
-            },
-            dataType: "json",
-            success: function(data){
-                $.map(data,function(obj){
-                    document.getElementById('price_'+index).value = obj.price;
-                    document.getElementById('item_id_'+index).value = obj.id;
-                    CalculateOrderTotal();
-                });
-            },
-        });
+    // ほかの行ですでに選択されているアイテムかを確認する
+    function IsItemSelectedInOtherRow(index, item_id){
+        var order_item_count = document.getElementById('order_item_count').value;
+        for(var i = 1; i <= order_item_count; i++){
+            if(String(i) === String(index)){
+                continue;
+            }
+            var item_id_input = document.getElementById('item_id_'+i);
+            if(item_id_input != null && item_id_input.value == item_id){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // アイテムを選んだら、アイテムID・単価・数量（1）を入れる
+    function SelectItem(index){
+        var select = document.getElementById('item_select_'+index);
+        var item_id = select.value;
+        if(item_id != '' && IsItemSelectedInOtherRow(index, item_id)){
+            alert('このアイテムはすでに選択されています。数量を変更してください。');
+            select.value = document.getElementById('item_id_'+index).value;
+            return;
+        }
+        if(item_id == ''){
+            ClearFilledItem(index);
+            return;
+        }
+        document.getElementById('item_id_'+index).value = item_id;
+        document.getElementById('price_'+index).value = select.options[select.selectedIndex].dataset.price;
+        document.getElementById('quantity_'+index).value = 1;
+        CalculateOrderTotal();
+        PaidFocus();
     }
 
     function ClearFilledItem(index){
+        document.getElementById('item_select_'+index).value = '';
         document.getElementById('item_id_'+index).value = '';
         document.getElementById('price_'+index).value = '';
         document.getElementById('quantity_'+index).value = '';
-    }
-
-    function AutoFillQuantity(index){
-        document.getElementById('quantity_'+index).value = 1;
+        CalculateOrderTotal();
     }
 
     function OrderItemValidation(id){
@@ -381,6 +359,9 @@
         var order_total = 0;
         var order_item_count = document.getElementById('order_item_count').value;
         for(var i = 1; i <= order_item_count; i++){
+            if(document.getElementById('price_'+i) == null){
+                continue;
+            }
             const price = document.getElementById('price_'+i).value;
             const quantity = document.getElementById('quantity_'+i).value;
             order_total += (price * quantity);
@@ -404,18 +385,24 @@
         var delete_item_checkbox = row.insertCell(3);
         var clear_button= row.insertCell(4);
 
+        // 1行目のドロップダウンの選択肢をコピーして、未選択の状態にする
+        var select = document.getElementById('item_select_1').cloneNode(true);
+        select.id = 'item_select_'+order_item_count;
+        select.value = '';
+        select.setAttribute('onchange', "SelectItem('"+order_item_count+"');");
+
         item_input.innerHTML = "<input type='hidden' name='item_id_"+order_item_count+"' id='item_id_"+order_item_count+"' />";
-        item_input.innerHTML += "<input type='text' class='form-control' name='item_name_"+order_item_count+"' id='item_name_"+order_item_count+"' onchange='AutoFillQuantity('"+order_item_count+"');GetItemIdAndPrice('"+order_item_count+"');' placeholder='少なくとも一つ文字を入力してください' />";
-        price_input.innerHTML = "<input type='text' class='form-control' name='price_"+order_item_count+"' id='price_"+order_item_count+"' onchange='CalculateOrderTotal()' placeholder='数字' />";
-        quantity_input.innerHTML = "<input type='text' class='form-control' name='quantity_"+order_item_count+"' id='quantity_"+order_item_count+"' onchange='CalculateOrderTotal()' placeholder='数字' />";
+        item_input.appendChild(select);
+        price_input.innerHTML = "<input type='text' class='form-control' name='price_"+order_item_count+"' id='price_"+order_item_count+"' onchange='OrderItemValidation(this.id);CalculateOrderTotal()' placeholder='数字' />";
+        quantity_input.innerHTML = "<input type='text' class='form-control' name='quantity_"+order_item_count+"' id='quantity_"+order_item_count+"' onchange='OrderItemValidation(this.id);CalculateOrderTotal()' placeholder='数字' />";
         delete_item_checkbox.innerHTML = "<input type='checkbox' class='form-control' name='delete_item_"+order_item_count+"' id='delete_item_"+order_item_count+"' />";
-        clear_button.innerHTML = "<button class='btn btn-primary' name='btnClear' id='btnClear' onclick=\"ClearFilledItem('"+order_item_count+"')\"";
+        clear_button.innerHTML = "<button type='button' class='btn btn-primary' onclick=\"ClearFilledItem('"+order_item_count+"')\">クリア</button>";
         document.getElementById('order_item_count').value = order_item_count;
     }
 
     function DeleteRow(){
         var order_item_count = document.getElementById('order_item_count').value;
-        if(order_item_count > 1 && document.getElementById('item_name_'+order_item_count).value == ''){
+        if(order_item_count > 1 && document.getElementById('item_select_'+order_item_count).value == ''){
             document.getElementById('order_item_row_'+order_item_count).remove();
             order_item_count--;
             document.getElementById('order_item_count').value = order_item_count;

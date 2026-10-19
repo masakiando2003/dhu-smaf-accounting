@@ -107,6 +107,82 @@ class OrderTest extends TestCase
              ->assertSee('綿菓子');
     }
 
+    public function testDetailPageNumbersEachOrderItemRow()
+    {
+        $order = factory(Order::class)->create(['paid' => 1000]);
+        factory(OrderItem::class)->create([
+            'order_id' => $order->id, 'item_id' => $this->cottonCandy->id, 'price' => 300, 'quantity' => 2,
+        ]);
+        factory(OrderItem::class)->create([
+            'order_id' => $order->id, 'item_id' => $this->potato->id, 'price' => 150, 'quantity' => 1,
+        ]);
+
+        $html = $this->get('/admin/orders/detail/'.$order->id)->assertOk()->getContent();
+
+        // 明細ごとに 1, 2 と行番号が振られる
+        $this->assertStringContainsString('id="item_id_1" value="'.$this->cottonCandy->id.'"', $html);
+        $this->assertStringContainsString('id="item_id_2" value="'.$this->potato->id.'"', $html);
+        $this->assertStringContainsString('id="quantity_1" value="2"', $html);
+        $this->assertStringContainsString('id="quantity_2" value="1"', $html);
+        // 明細の数は1か所だけ
+        $this->assertSame(1, substr_count($html, 'name="order_item_count"'));
+        $this->assertStringContainsString('id="order_item_count" value="2"', $html);
+        // ドロップダウンで、各行の実際のアイテムが選ばれている
+        $this->assertSame(2, preg_match_all('/<option value="(\d+)" data-price="\d+"\s+selected\s*>/', $html, $matches));
+        $this->assertSame([(string) $this->cottonCandy->id, (string) $this->potato->id], $matches[1]);
+    }
+
+    public function testOrderPagesDoNotUseAutocomplete()
+    {
+        $this->get('/admin/orders/create')
+             ->assertOk()
+             ->assertDontSee('item_autocomplete')
+             ->assertDontSee('item_search');
+    }
+
+    public function testRegisterRejectsSameItemInMultipleRows()
+    {
+        $input = $this->orderInput([[$this->cottonCandy, 300, 1], [$this->cottonCandy, 300, 2]]);
+
+        $this->from('/admin/orders/create')
+             ->post('/admin/orders/register', $input)
+             ->assertRedirect('/admin/orders/create')
+             ->assertSessionHasErrors(['order_items' => '同じアイテムが複数の行で選択されています。数量でまとめてください。']);
+
+        $this->assertSame(0, Order::count());
+        $this->assertSame(50, (int) $this->cottonCandy->fresh()->stock);
+    }
+
+    public function testRegisterAllowsSameItemWhenOneRowIsMarkedDeleted()
+    {
+        $input = $this->orderInput(
+            [[$this->cottonCandy, 300, 1], [$this->cottonCandy, 300, 2]],
+            ['delete_item_2' => 'on']
+        );
+
+        $this->post('/admin/orders/register', $input)
+             ->assertRedirect('/admin/orders')
+             ->assertSessionHasNoErrors();
+
+        $this->assertSame(49, (int) $this->cottonCandy->fresh()->stock);
+    }
+
+    public function testEditRejectsSameItemInMultipleRows()
+    {
+        $this->post('/admin/orders/register', $this->orderInput([[$this->cottonCandy, 300, 1]]));
+        $order = Order::first();
+
+        $this->from('/admin/orders/detail/'.$order->id)
+             ->post('/admin/orders/edit', $this->orderInput(
+                [[$this->cottonCandy, 300, 1], [$this->cottonCandy, 300, 3]],
+                ['order_id' => (string) $order->id]
+             ))
+             ->assertRedirect('/admin/orders/detail/'.$order->id)
+             ->assertSessionHasErrors('order_items');
+
+        $this->assertSame(49, (int) $this->cottonCandy->fresh()->stock);
+    }
+
     public function testRegisterCreatesOrderWithItemsStockAndCashier()
     {
         $input = $this->orderInput(
