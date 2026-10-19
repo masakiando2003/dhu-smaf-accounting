@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\ConnectionInterface;
 
 use App\Model\Item;
 use App\Model\Order;
@@ -21,6 +21,19 @@ use Carbon\Carbon;
 class OrderService
 {
     use PaginatesRecords;
+
+    /**
+     * @var \Illuminate\Database\ConnectionInterface
+     */
+    private $db;
+
+    /**
+     * @param  \Illuminate\Database\ConnectionInterface  $db  DB 接続（削除処理のトランザクションに使う）
+     */
+    public function __construct(ConnectionInterface $db)
+    {
+        $this->db = $db;
+    }
 
     /**
      * 注文一覧をページに分けて取得する
@@ -239,7 +252,7 @@ class OrderService
      */
     public function delete($order_id)
     {
-        DB::transaction(function () use ($order_id) {
+        $this->db->transaction(function () use ($order_id) {
             $order = Order::findOrFail($order_id);
             $order->delete();
 

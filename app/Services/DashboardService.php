@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\ConnectionInterface;
 
 use App\Model\Item;
 use App\Model\Order;
@@ -17,6 +17,19 @@ class DashboardService
 {
     // 在庫が初期在庫のこの割合以下になったら「在庫が少ない」とする
     const LOW_STOCK_RATIO = 0.2;
+
+    /**
+     * @var \Illuminate\Database\ConnectionInterface
+     */
+    private $db;
+
+    /**
+     * @param  \Illuminate\Database\ConnectionInterface  $db  DB 接続（集計用の SQL 式の作成に使う）
+     */
+    public function __construct(ConnectionInterface $db)
+    {
+        $this->db = $db;
+    }
 
     /**
      * ダッシュボードの表示内容を取得する
@@ -34,7 +47,7 @@ class DashboardService
         $order_items = OrderItem::join('orders', 'orders.id', '=', 'order_items.order_id')
                                 ->whereNull('orders.deleted_at');
 
-        $sales = (int) (clone $order_items)->sum(DB::raw('order_items.price * order_items.quantity'));
+        $sales = (int) (clone $order_items)->sum($this->db->raw('order_items.price * order_items.quantity'));
         $order_count = Order::count();
         $visitor_count = (int) Order::sum('num_of_people');
         $expenditure = (int) Cashier::where('cashier_type', 'payment')->sum('payment_amount');
@@ -50,8 +63,8 @@ class DashboardService
         $best_selling_items = (clone $order_items)
                                 ->join('items', 'items.id', '=', 'order_items.item_id')
                                 ->select('items.id', 'items.name',
-                                         DB::raw('SUM(order_items.quantity) as total_quantity'),
-                                         DB::raw('SUM(order_items.price * order_items.quantity) as total_sales'))
+                                         $this->db->raw('SUM(order_items.quantity) as total_quantity'),
+                                         $this->db->raw('SUM(order_items.price * order_items.quantity) as total_sales'))
                                 ->groupBy('items.id', 'items.name')
                                 ->orderByDesc('total_quantity')
                                 ->limit(5)

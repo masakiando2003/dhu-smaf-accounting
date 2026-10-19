@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\ConnectionInterface;
 
 use App\Model\Cashier;
 use App\Services\Concerns\PaginatesRecords;
@@ -15,6 +15,19 @@ use Carbon\Carbon;
 class CashierService
 {
     use PaginatesRecords;
+
+    /**
+     * @var \Illuminate\Database\ConnectionInterface
+     */
+    private $db;
+
+    /**
+     * @param  \Illuminate\Database\ConnectionInterface  $db  DB 接続（削除処理のトランザクションに使う）
+     */
+    public function __construct(ConnectionInterface $db)
+    {
+        $this->db = $db;
+    }
 
     /**
      * 出納記録の一覧をページに分けて取得する
@@ -102,7 +115,7 @@ class CashierService
      */
     public function delete($id)
     {
-        DB::transaction(function () use ($id) {
+        $this->db->transaction(function () use ($id) {
             $cashier = Cashier::findOrFail($id);
             $cashier->delete();
             $cashier->save();

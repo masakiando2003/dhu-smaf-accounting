@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\ConnectionInterface;
 
 use App\Model\Item;
 use App\Services\Concerns\PaginatesRecords;
@@ -13,6 +13,19 @@ use App\Services\Concerns\PaginatesRecords;
 class ItemService
 {
     use PaginatesRecords;
+
+    /**
+     * @var \Illuminate\Database\ConnectionInterface
+     */
+    private $db;
+
+    /**
+     * @param  \Illuminate\Database\ConnectionInterface  $db  DB 接続（削除処理のトランザクションに使う）
+     */
+    public function __construct(ConnectionInterface $db)
+    {
+        $this->db = $db;
+    }
 
     /**
      * アイテム一覧をページに分けて取得する
@@ -139,7 +152,7 @@ class ItemService
      */
     public function delete($id)
     {
-        DB::transaction(function () use ($id) {
+        $this->db->transaction(function () use ($id) {
             $item = Item::findOrFail($id);
             $item->delete();
             $item->save();

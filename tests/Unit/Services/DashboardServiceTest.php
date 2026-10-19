@@ -23,7 +23,7 @@ class DashboardServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new DashboardService();
+        $this->service = $this->app->make(DashboardService::class);
     }
 
     /**

@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Model\CompanyInfo;
 use App\Model\CompanyMembers;
 use App\Model\Order;
-use App\Model\Item;
 use App\Model\Cashier;
 
 /**
@@ -13,6 +12,19 @@ use App\Model\Cashier;
  */
 class ReportService
 {
+    /**
+     * @var \App\Services\ItemService
+     */
+    private $itemService;
+
+    /**
+     * @param  \App\Services\ItemService  $itemService
+     */
+    public function __construct(ItemService $itemService)
+    {
+        $this->itemService = $itemService;
+    }
+
     /**
      * レポートの表示に使うデータを取得する
      *
@@ -26,7 +38,7 @@ class ReportService
             'company_info'    => CompanyInfo::get()->first(),
             'company_members' => CompanyMembers::get(),
             'orders'          => new Order(),
-            'items'           => Item::get(),
+            'items'           => $this->itemService->all(),
             'expenses'        => Cashier::where('cashier_type', 'payment')->get(),
         ];
     }
