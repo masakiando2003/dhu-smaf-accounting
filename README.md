@@ -1,4 +1,6 @@
 # dhu-smaf-accounting
+[![tests](https://github.com/masakiando2003/dhu-smaf-accounting/actions/workflows/tests.yml/badge.svg)](https://github.com/masakiando2003/dhu-smaf-accounting/actions/workflows/tests.yml)
+
 株式会社スマフー会計システム（デジタルハリウッド大学 2019学園祭）
 
 ## 概要
@@ -184,6 +186,12 @@ vendor/bin/phpunit --testsuite Unit                 # ユニットテストだ�
 vendor/bin/phpunit tests/Feature/OrderTest.php      # ファイルを指定
 vendor/bin/phpunit --filter testDeleteSoftDeletes   # テスト名で絞り込み
 ```
+
+#### GitHub Actions での自動テスト
+`master` へのプッシュと、プルリクエストの作成・更新のたびに、GitHub Actions でテストが自動で実行されます（`.github/workflows/tests.yml`）。
+- 手元の Laradock と同じく、PHP 7.4・MySQL 8.4 で実行します
+- テスト専用のデータベース `smaf_testing` は、MySQL のサービスコンテナで用意します
+- 結果は、プルリクエストの「Checks」タブや、リポジトリの「Actions」タブで確認できます
 
 テストを書くときのポイントです。
 - データの作成には、`database/factories/ModelFactory.php` のファクトリーを使います（`factory(Item::class)->create()`）
