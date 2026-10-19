@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -20,7 +22,8 @@ Route::get('/admin/items', 'ItemController@index');
 // アイテム新規作成
 Route::get('/admin/items/create', 'ItemController@CreateItem');
 // アイテム詳細
-Route::get('/admin/items/detail/{id}', 'ItemController@ShowItemDetail');
+Route::get('/admin/items/detail/{id}', 'ItemController@ShowItemDetail')
+     ->where('id', '[0-9]+');
 // アイテム登録
 Route::post('/admin/items/register', 'ItemController@RegisterItem');
 // アイテム編集
@@ -37,7 +40,8 @@ Route::get('/admin/orders', 'OrderController@index');
 // 注文新規作成
 Route::get('/admin/orders/create', 'OrderController@CreateOrder');
 // 注文詳細
-Route::get('/admin/orders/detail/{id}', 'OrderController@ShowOrderDetail');
+Route::get('/admin/orders/detail/{id}', 'OrderController@ShowOrderDetail')
+     ->where('id', '[0-9]+');
 // 注文登録
 Route::post('/admin/orders/register', 'OrderController@RegisterOrder');
 // 注文編集
@@ -51,11 +55,13 @@ Route::get('/admin/cashier', 'CashierController@index');
 // 現金出納帳新規作成
 Route::get('/admin/cashier/create', 'CashierController@CreateCashier');
 // 現金出納帳詳細
-Route::get('/admin/cashier/detail/{id}', 'CashierController@ShowCashierDetail');
+Route::get('/admin/cashier/detail/{id}', 'CashierController@ShowCashierDetail')
+     ->where('id', '[0-9]+');
 // 現金出納帳登録
 Route::post('/admin/cashier/register', 'CashierController@RegisterCashier');
 // 現金出納帳編集
-Route::post('/admin/cashier/edit/{id}', 'CashierController@EditCashier');
+Route::post('/admin/cashier/edit/{id}', 'CashierController@EditCashier')
+     ->where('id', '[0-9]+');
 // 現金出納帳削除
 Route::delete('/admin/cashier/delete/', 'CashierController@DeleteCashier');
 
