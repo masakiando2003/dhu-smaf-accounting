@@ -8,14 +8,17 @@
 学園祭出店演習のために作った会計システムです。
 
 ## 使用技術
-- PHP 7.4（`composer.json` の要件は 7.2 以上。PHP 8 では動きません）
-- Laravel 6.x
-- MySQL
-- AdminLTE 3（管理画面テンプレート / jeroennoten/laravel-adminlte）
+- PHP 7.4.33（`composer.json` の要件は 7.2 以上。PHP 8 では動きません）
+- Laravel 6.18.43
+- MySQL 8.4
+- AdminLTE 3.0.0（管理画面テンプレート / jeroennoten/laravel-adminlte 3.0.2）
 - jQuery UI 1.12.1（日付の選択）
-- Laravel Mix 4 / Sass / Vue.js 2
-- PHPUnit 8
+- Laravel Mix 4.1.4 / Sass 1.23.6（CSS・JS のビルド。ビルド済みのファイルをリポジトリに含めています）
+- PHPUnit 8.4.3
 - Docker（Laradock）
+- GitHub Actions（テストの自動実行）
+
+バージョンは、`composer.lock`・`package-lock.json` と、Laradock・GitHub Actions で動かしている環境に合わせています。
 
 ## 工夫した点
 - 注文入力を素早く・正確にできる明細の入力
