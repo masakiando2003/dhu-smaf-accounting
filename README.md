@@ -203,6 +203,10 @@ vendor/bin/phpunit --filter testDeleteSoftDeletes   # テスト名で絞り込�
 - 結果は、プルリクエストの「Checks」タブや、リポジトリの「Actions」タブで確認できます
 - `main` はブランチ保護で `phpunit` のチェックを必須にしています。テストが失敗中・実行中のプルリクエストは、管理者でもマージできません
 
+#### GitHub Actions のアクションの更新
+ワークフローで使っているアクション（`actions/checkout` など）は、Dependabot が毎週月曜日に新しいバージョンを確認し、更新があればプルリクエストを作ります（`.github/dependabot.yml`）。
+複数のアクションの更新は、1つのプルリクエストにまとめられます。テストが通ることを確認してからマージしてください。
+
 テストを書くときのポイントです。
 - データの作成には、`database/factories/ModelFactory.php` のファクトリーを使います（`factory(Item::class)->create()`）
 - 同梱の Faker は古く、PHP 7.4 では `sentence()` などの文章生成がエラーになります。ファクトリーでは固定の文字列を使ってください
