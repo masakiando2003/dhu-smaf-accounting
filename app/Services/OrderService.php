@@ -148,6 +148,7 @@ class OrderService
      * 出納記録と会社の現金も更新する. 注文日時を変えた場合は、出納記録の取引日時も同じにする.
      *
      * 画面の明細にないアイテム（行のアイテムを別のアイテムに変えた場合など）の明細は削除する.
+     * 登録時の支払金額が 0円で収入の記録がない注文に、支払金額を入れた場合は、収入の記録を作る.
      *
      * @param  int          $order_id     注文ID
      * @param  array        $data         num_of_people, paid, change, remarks
@@ -247,18 +248,39 @@ class OrderService
                    ]);
         }
 
-        Cashier::where('order_id', $order_id)
-                ->update([
-                'income_amount'     => $data['paid'],
-                'payment_amount'    => $data['change'],
-                'deduction_amount'  => $data['paid'] - $data['change'],
-                'remarks'           => $data['remarks'],
-                'updated_at'        => Carbon::now(),
-            ]);
+        $had_income = Cashier::where('order_id', $order_id)->exists();
+        if($had_income){
+            Cashier::where('order_id', $order_id)
+                    ->update([
+                    'income_amount'     => $data['paid'],
+                    'payment_amount'    => $data['change'],
+                    'deduction_amount'  => $data['paid'] - $data['change'],
+                    'remarks'           => $data['remarks'],
+                    'updated_at'        => Carbon::now(),
+                ]);
+        } elseif($data['paid'] > 0) {
+            // 登録時の支払金額が 0円で収入の記録がない注文に、後から支払金額を入れた場合は、記録を作る
+            $order = Order::find($order_id);
+            $new_cashier = new Cashier();
+            $new_cashier->transaction_time = $order->order_at->format('Y-m-d H:i:s');
+            $new_cashier->cashier_type = 'income';
+            $new_cashier->order_id = $order_id;
+            $new_cashier->description = '注文ID: '.$order_id.'に支払する';
+            $new_cashier->income_amount = $data['paid'];
+            $new_cashier->payment_amount = $data['change'];
+            $new_cashier->deduction_amount = $data['paid'] - $data['change'];
+            $new_cashier->remarks = $data['remarks'];
+            $new_cashier->created_at = Carbon::now();
+            $new_cashier->save();
+        }
 
-        //会社の現金を更新する
-        CompanyInfo::decrement('cash', $old_order_item_total);
-        CompanyInfo::increment('cash', $order_item_total);
+        // 会社の現金を更新する. 収入の記録がある注文だけが、会社の現金に含まれる
+        if($had_income){
+            CompanyInfo::decrement('cash', $old_order_item_total);
+        }
+        if($had_income || $data['paid'] > 0){
+            CompanyInfo::increment('cash', $order_item_total);
+        }
     }
 
     /**

@@ -174,6 +174,44 @@ class OrderServiceTest extends TestCase
         $this->assertSame(32000 + 300, $this->companyCash());
     }
 
+    public function testUpdateCreatesIncomeWhenPaidIsEnteredLater()
+    {
+        // 支払 0円で登録した注文には、収入の記録がなく、会社の現金も増えない
+        $order = $this->service->register($this->orderData(['paid' => 0, 'change' => 0]), [
+            $this->orderItem($this->cottonCandy, 300, 1),
+        ], '2019-11-30 10:15:00');
+        $this->assertSame(0, Cashier::count());
+        $this->assertSame(32000, $this->companyCash());
+
+        $this->service->update($order->id, $this->orderData(['paid' => 1000, 'change' => 700]), [
+            $this->orderItem($this->cottonCandy, 300, 1),
+        ]);
+
+        $this->assertDatabaseHas('cashier', [
+            'order_id'         => $order->id,
+            'cashier_type'     => 'income',
+            'income_amount'    => 1000,
+            'payment_amount'   => 700,
+            'deduction_amount' => 300,
+            'transaction_time' => '2019-11-30 10:15:00',
+        ]);
+        $this->assertSame(32000 + 300, $this->companyCash());
+    }
+
+    public function testUpdateWithoutIncomeKeepsCashWhenPaidStaysZero()
+    {
+        $order = $this->service->register($this->orderData(['paid' => 0, 'change' => 0]), [
+            $this->orderItem($this->cottonCandy, 300, 1),
+        ]);
+
+        $this->service->update($order->id, $this->orderData(['paid' => 0, 'change' => 0]), [
+            $this->orderItem($this->cottonCandy, 300, 2),
+        ]);
+
+        $this->assertSame(0, Cashier::count());
+        $this->assertSame(32000, $this->companyCash());
+    }
+
     public function testRegisterWithZeroPaidDoesNotCreateCashier()
     {
         $this->service->register($this->orderData(['paid' => 0, 'change' => 0]), [

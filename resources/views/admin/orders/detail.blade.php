@@ -80,7 +80,17 @@
                 </div>
             </div>
 
-            <input type="hidden" name="num_of_people" id="num_of_people" value="1" />
+            <!--スペースをあげる-->
+            <div class="row">&nbsp;</div>
+
+            <div class="row">
+                <div class="col-sm-2">人数</div>
+                <div class="col-sm-2">
+                    <input type="number" name="num_of_people" id="num_of_people"
+                           class="form-control" min="1" step="1" placeholder="人数"
+                           value="{{ old('num_of_people', $orderDetail->num_of_people ?? 1) }}" />
+                </div>
+            </div>
 
             <!--スペースをあげる-->
             <div class="row">&nbsp;</div>
@@ -336,8 +346,12 @@
     function CheckInput(){
         var flag = true;
         
-        if(document.getElementById('num_of_people').value == ''){
+        var num_of_people = document.getElementById('num_of_people').value;
+        if(num_of_people == ''){
             alert('人数を入力してください。');
+            flag = false;
+        } else if(!num_of_people.match(/^[0-9]+$/) || parseInt(num_of_people) < 1){
+            alert('人数は1以上の数字を入力してください。');
             flag = false;
         }
         if(document.getElementById('paid').value == ''){

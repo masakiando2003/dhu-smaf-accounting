@@ -39,9 +39,9 @@ class OrderTest extends TestCase
      *
      * @return array
      */
-    private function orderData()
+    private function orderData(int $num_of_people = 1)
     {
-        return ['num_of_people' => 1, 'paid' => 0, 'change' => 0, 'remarks' => null];
+        return ['num_of_people' => $num_of_people, 'paid' => 0, 'change' => 0, 'remarks' => null];
     }
 
     /**
@@ -73,9 +73,9 @@ class OrderTest extends TestCase
      * @param  string  $order_at  注文日時
      * @return \App\Model\Order
      */
-    private function registerOrder(array $items, string $order_at)
+    private function registerOrder(array $items, string $order_at, int $num_of_people = 1)
     {
-        return $this->orderService->register($this->orderData(), $this->orderItems($items), $order_at);
+        return $this->orderService->register($this->orderData($num_of_people), $this->orderItems($items), $order_at);
     }
 
     public function testSellAmountByDateMultipliesPriceByQuantity()
@@ -144,5 +144,36 @@ class OrderTest extends TestCase
 
         $this->assertSame(1, $this->orders->GetOrdersCountByDate('2019-11-30'));
         $this->assertSame(300, $this->orders->GetOrderItemsSellAmountByDate('2019-11-30'));
+    }
+
+    public function testVisitorCountsSumNumOfPeople()
+    {
+        $this->registerOrder([[$this->cottonCandy, 300, 1]], '2019-11-30 09:10:00', 2);
+        $this->registerOrder([[$this->cottonCandy, 300, 2]], '2019-11-30 09:59:30', 3);
+        $this->registerOrder([[$this->potato, 150, 1]], '2019-11-30 10:00:00', 1);
+        $this->registerOrder([[$this->potato, 150, 1]], '2019-12-01 12:00:00', 4);
+        $deleted = $this->registerOrder([[$this->potato, 150, 1]], '2019-11-30 09:30:00', 10);
+        $this->orderService->delete($deleted->id);
+
+        $this->assertSame(5, $this->orders->GetVisitorCountByTimePeriod('2019-11-30', '9:00 - 9:59'));
+        $this->assertSame(1, $this->orders->GetVisitorCountByTimePeriod('2019-11-30', '10:00 - 10:59'));
+        $this->assertSame(6, $this->orders->GetVisitorCountByDate('2019-11-30'));
+        $this->assertSame(10, $this->orders->GetVisitorTotalCount(['2019-11-30', '2019-12-01']));
+    }
+
+    public function testAverageSpendPerVisitorRoundsDown()
+    {
+        // 売上 1,050円（300×3 + 150）÷ 来客数 4人 = 262.5円 → 262円
+        $this->registerOrder([[$this->cottonCandy, 300, 3]], '2019-11-30 10:00:00', 3);
+        $this->registerOrder([[$this->potato, 150, 1]], '2019-11-30 11:00:00', 1);
+
+        $this->assertSame(262, $this->orders->GetAverageSpendPerVisitorByDate('2019-11-30'));
+        $this->assertSame(262, $this->orders->GetAverageSpendPerVisitor(['2019-11-30', '2019-12-01']));
+    }
+
+    public function testAverageSpendPerVisitorIsZeroWithoutVisitors()
+    {
+        $this->assertSame(0, $this->orders->GetAverageSpendPerVisitorByDate('2019-11-30'));
+        $this->assertSame(0, $this->orders->GetAverageSpendPerVisitor(['2019-11-30', '2019-12-01']));
     }
 }

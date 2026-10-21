@@ -101,6 +101,10 @@ class OrderRequestTest extends TestCase
         foreach ($request->rules() as $field => $rules) {
             foreach (explode('|', $rules) as $rule) {
                 $rule_name = explode(':', $rule)[0];
+                // bail はエラーメッセージを持たない
+                if ($rule_name === 'bail') {
+                    continue;
+                }
                 $this->assertArrayHasKey("{$field}.{$rule_name}", $request->messages());
             }
         }

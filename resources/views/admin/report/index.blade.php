@@ -52,6 +52,7 @@
                                 @foreach($items as $item)
                                     <th width="15%">{{ $item->name }}</th>
                                 @endforeach
+                                <th width="15%">来客数</th>
                             </tr>
                             @foreach($time_periods as $time_period)
                                 <tr>
@@ -59,6 +60,7 @@
                                     @foreach($items as $item)
                                         <th>{{ $orders->GetOrdersCountByItemAndTimePeriod($item->id, $sell_date, $time_period) }}個</th>
                                     @endforeach
+                                    <th>{{ $orders->GetVisitorCountByTimePeriod($sell_date, $time_period) }}人</th>
                                 </tr>
                             @endforeach
                         </table>
@@ -113,6 +115,24 @@
                         </div>
                         <div class="col-sm-6 text-left">
                             <strong>{{ $orders->GetOrdersCountByDate($sell_date)}}個</strong>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-sm-6 text-left">
+                            <strong>来客数: </strong>
+                        </div>
+                        <div class="col-sm-6 text-left">
+                            <strong>{{ $orders->GetVisitorCountByDate($sell_date) }}人</strong>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-sm-6 text-left">
+                            <strong>客単価: </strong>
+                        </div>
+                        <div class="col-sm-6 text-left">
+                            <strong>{{ $orders->GetAverageSpendPerVisitorByDate($sell_date) }}円</strong>
                         </div>
                     </div>
 
@@ -211,6 +231,34 @@
                     </div>
                     <div class="col-sm-6">
                         <strong>{{ $orders->GetOrderItemsTotalSellAmount($sell_dates) }}円</strong>
+                    </div>
+                </div>
+
+                <!--スペースをあげる-->
+                <div class="row">
+                    <div class="col-sm-12">&nbsp;</div>
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-6">
+                        <strong>{{ $sell_dates[0] }}から{{ $sell_dates[count($sell_dates)-1] }}までの合計来客数:</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <strong>{{ $orders->GetVisitorTotalCount($sell_dates) }}人</strong>
+                    </div>
+                </div>
+
+                <!--スペースをあげる-->
+                <div class="row">
+                    <div class="col-sm-12">&nbsp;</div>
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-6">
+                        <strong>{{ $sell_dates[0] }}から{{ $sell_dates[count($sell_dates)-1] }}までの客単価:</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <strong>{{ $orders->GetAverageSpendPerVisitor($sell_dates) }}円</strong>
                     </div>
                 </div>
             </div>
