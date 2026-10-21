@@ -251,6 +251,29 @@ WSL など、ホスト側で直接 `php artisan` を実行しています。
 docker compose exec -u laradock workspace php artisan migrate:fresh --seed
 ```
 
+毎回コンテナに入るのが手間な場合は、`~/.bashrc` に次の関数を追加すると、WSL のどこからでも短いコマンドで実行できます。
+```bash
+# dhu-smaf-accounting: Laradock の workspace コンテナ（PHP 7.4）でコマンドを実行する
+# （WSL の PHP 8 では Laravel 6 が動かないため）
+_smaf_workspace() {
+  local tty_opt=""
+  [ -t 0 ] && [ -t 1 ] || tty_opt="-T"
+  (cd ~/dhu-smaf-accounting/laradock && docker compose exec $tty_opt -u laradock workspace "$@")
+}
+dartisan()  { _smaf_workspace php artisan "$@"; }
+dcomposer() { _smaf_workspace composer "$@"; }
+dphpunit()  { _smaf_workspace vendor/bin/phpunit "$@"; }
+```
+追加したら `source ~/.bashrc` で読み込み直します。
+```bash
+dartisan --version            # php artisan --version
+dartisan migrate:fresh --seed # php artisan migrate:fresh --seed
+dcomposer install             # composer install
+dphpunit --testsuite Unit     # vendor/bin/phpunit --testsuite Unit
+```
+- Laradock を別の場所に置いている場合は、関数の中の `~/dhu-smaf-accounting/laradock` を書き換えてください
+- 端末から実行したときは対話的に動き（`php artisan tinker` など）、スクリプトから実行したときは `-T`（TTY なし）で動きます
+
 #### `vendor/autoload.php` が見つからず 500 エラーになる
 「4. Laravel の初期設定」の `composer install` がまだ済んでいません。
 workspace コンテナに入って実行してください。
