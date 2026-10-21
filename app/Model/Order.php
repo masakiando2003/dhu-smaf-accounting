@@ -52,6 +52,25 @@ class Order extends Model
     }
 
     /**
+     * 指定した日の時間帯の範囲を返す
+     *
+     * 終わりの時刻（例: 9:59）は、その1分間（9:59:59 まで）を含める.
+     *
+     * @param  string  $date         日付（Y-m-d）
+     * @param  string  $time_period  時間帯（例: "9:00 - 9:59"）
+     * @return \Carbon\Carbon[]  [開始日時, 終了日時（含まない）]
+     */
+    private static function timePeriodRange(string $date, string $time_period)
+    {
+        $time_arr = explode(" - ", $time_period);
+
+        return [
+            Carbon::parse($date." ".$time_arr[0]),
+            Carbon::parse($date." ".$time_arr[1])->addMinute(),
+        ];
+    }
+
+    /**
      * 開始日の 0時から、終了日の翌日 0時までの範囲を返す
      *
      * @param  string  $start_date  開始日（Y-m-d）
@@ -92,10 +111,7 @@ class Order extends Model
      */
     public function GetOrdersCountByItemAndTimePeriod(int $item_id, string $date, string $time_period)
     {
-        $time_arr = explode(" - ", $time_period);
-        // 終わりの時刻（例: 9:59）は、その1分間（9:59:59 まで）を含める
-        $start_time = Carbon::parse($date." ".$time_arr[0]);
-        $end_time = Carbon::parse($date." ".$time_arr[1])->addMinute();
+        [$start_time, $end_time] = self::timePeriodRange($date, $time_period);
 
         $order_count = Order::join('order_items', function($join){
             $join->on('orders.id', '=', 'order_items.order_id');
@@ -204,5 +220,79 @@ class Order extends Model
                        ->orderedBetween(...self::dayRange($start_date, $end_date))
                        ->sum(DB::raw('order_items.price * order_items.quantity'));
         return (int) $order_total;
+    }
+
+    /**
+     * 指定した日・時間帯の来客数（注文の人数の合計）を取得する
+     *
+     * @param  string  $date         日付（Y-m-d）
+     * @param  string  $time_period  時間帯（例: "9:00 - 9:59"）
+     * @return int
+     */
+    public function GetVisitorCountByTimePeriod(string $date, string $time_period)
+    {
+        return (int) Order::orderedBetween(...self::timePeriodRange($date, $time_period))
+                          ->sum('num_of_people');
+    }
+
+    /**
+     * 指定した日の来客数（注文の人数の合計）を取得する
+     *
+     * @param  string  $date  日付（Y-m-d）
+     * @return int
+     */
+    public function GetVisitorCountByDate(string $date)
+    {
+        return (int) Order::orderedBetween(...self::dayRange($date, $date))
+                          ->sum('num_of_people');
+    }
+
+    /**
+     * 指定した期間の来客数（注文の人数の合計）を取得する
+     *
+     * @param  string[]  $dates  日付（Y-m-d）の配列. 最初と最後の日付を期間として使う
+     * @return int
+     */
+    public function GetVisitorTotalCount($dates)
+    {
+        return (int) Order::orderedBetween(...self::dayRange($dates[0], $dates[count($dates)-1]))
+                          ->sum('num_of_people');
+    }
+
+    /**
+     * 指定した日の客単価（売上高 ÷ 来客数、1円未満は切り捨て）を取得する
+     *
+     * @param  string  $date  日付（Y-m-d）
+     * @return int  来客数が 0人の場合は 0
+     */
+    public function GetAverageSpendPerVisitorByDate(string $date)
+    {
+        return self::averageSpend($this->GetOrderItemsSellAmountByDate($date), $this->GetVisitorCountByDate($date));
+    }
+
+    /**
+     * 指定した期間の客単価（売上高 ÷ 来客数、1円未満は切り捨て）を取得する
+     *
+     * @param  string[]  $dates  日付（Y-m-d）の配列. 最初と最後の日付を期間として使う
+     * @return int  来客数が 0人の場合は 0
+     */
+    public function GetAverageSpendPerVisitor($dates)
+    {
+        return self::averageSpend($this->GetOrderItemsTotalSellAmount($dates), $this->GetVisitorTotalCount($dates));
+    }
+
+    /**
+     * 客単価を計算する
+     *
+     * @param  int  $sell_amount    売上高
+     * @param  int  $visitor_count  来客数
+     * @return int  来客数が 0人の場合は 0
+     */
+    private static function averageSpend(int $sell_amount, int $visitor_count)
+    {
+        if($visitor_count <= 0){
+            return 0;
+        }
+        return intdiv($sell_amount, $visitor_count);
     }
 }

@@ -225,6 +225,51 @@ class OrderTest extends TestCase
         $this->assertRegExp('/2019-11-30 .*?9:00 - 9:59 1個 0個/u', $text);
     }
 
+    public function testCreatePageShowsNumOfPeopleInputWithDefaultOne()
+    {
+        $this->get('/admin/orders/create')
+             ->assertOk()
+             ->assertSeeInOrder(['注文時間', '人数', 'name="num_of_people"'], false)
+             ->assertSee('type="number" name="num_of_people" id="num_of_people"', false)
+             ->assertSee('value="1"', false);
+    }
+
+    public function testDetailPageShowsRegisteredNumOfPeople()
+    {
+        $order = factory(Order::class)->create(['num_of_people' => 3]);
+
+        $html = $this->get('/admin/orders/detail/'.$order->id)->assertOk()->getContent();
+
+        $this->assertRegExp('/name="num_of_people" id="num_of_people"[^>]*value="3"/s', $html);
+    }
+
+    public function testRegisterRejectsZeroPeople()
+    {
+        $input = $this->orderInput([[$this->cottonCandy, 300, 1]], ['num_of_people' => '0']);
+
+        $response = $this->from('/admin/orders/create')
+                         ->post('/admin/orders/register', $input)
+                         ->assertRedirect('/admin/orders/create')
+                         ->assertSessionHasErrors(['num_of_people' => '人数は1人以上で入力してください']);
+
+        // bail により、エラーは1つだけ
+        $this->assertCount(1, session('errors')->get('num_of_people'));
+        $this->assertSame(0, Order::count());
+    }
+
+    public function testEditUpdatesNumOfPeople()
+    {
+        $this->post('/admin/orders/register', $this->orderInput([[$this->cottonCandy, 300, 1]], ['num_of_people' => '2']));
+        $order = Order::first();
+
+        $this->post('/admin/orders/edit', $this->orderInput([[$this->cottonCandy, 300, 1]], [
+            'order_id'      => (string) $order->id,
+            'num_of_people' => '5',
+        ]))->assertRedirect('/admin/orders');
+
+        $this->assertSame(5, (int) $order->fresh()->num_of_people);
+    }
+
     public function testOrderPagesDoNotUseAutocomplete()
     {
         $this->get('/admin/orders/create')

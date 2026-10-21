@@ -30,7 +30,8 @@ class OrderRequest extends FormRequest
     public function rules()
     {
         return [
-            'num_of_people'         => 'required|regex:/^[0-9]+$/',
+            // bail: 最初に見つかったエラーだけを表示する
+            'num_of_people'         => 'bail|required|regex:/^[0-9]+$/|integer|min:1',
             'paid'                  => 'required|regex:/^[0-9]+$/',
         ];
     }
@@ -45,6 +46,8 @@ class OrderRequest extends FormRequest
         return [
             "num_of_people.required"       => "人数が指定されていません",
             "num_of_people.regex"          => "人数に数字以外が試用されています",
+            "num_of_people.integer"        => "人数に数字以外が試用されています",
+            "num_of_people.min"            => "人数は1人以上で入力してください",
             "paid.required"                => "支払金額が指定されていません",
             "paid.regex"                   => "支払金額に数字以外が試用されています",
         ];
